@@ -54,7 +54,7 @@ def pcaLite(X, bScale=False, bMakeFullRank=True):
        feature variances. Default = False.
      - If bMakeFullRank is true then the principle components are reduced to
        ensure that they are full rank. Default = True.
-    
+
     Parameters
     ----------
     X: Numpy array
@@ -63,7 +63,27 @@ def pcaLite(X, bScale=False, bMakeFullRank=True):
 
     Returns
     -------
-    w: Numpy array
-    b: Numpy array
+    coeff: Numpy array
+    muX: Numpy array
+    vals: Numpy array
     """
-    pass
+    eps = 2.2204e-16
+    muX = np.mean(X, axis=0)
+
+    X = np.subtract(X, muX)
+    if bScale:
+         sig = np.std(X, axis=0, ddof=1) # DDof set to 1 to match MATLAB std
+         X = np.divide(X, sig)
+
+    _, v, coeff = np.linalg.svd(X)
+
+    if bMakeFullRank:
+        coeff = coeff[:, v > (eps * v[0] * max(X.shape))]
+
+    vals = X @ coeff # Matmul
+
+    if bScale:
+        sig = sig[np.newaxis]
+        coeff = np.divide(coeff, sig.T)
+
+    return coeff, muX, vals
