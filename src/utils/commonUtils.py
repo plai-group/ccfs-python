@@ -9,8 +9,7 @@ def cohenKappa(confusionMatrix):
 
     Returns
     -------
-    float
-        a floating point value (Cohen's kappa) of the confusion matrix
+    kappa: float
     """
     propPreds = np.sum(confusionMatrix, axis=0)
     propPreds = propPreds/np.sum(propPreds)
@@ -24,3 +23,36 @@ def cohenKappa(confusionMatrix):
     kappa = (p_o - p_e)/(1 - p_e)
 
     return kappa
+
+
+def f1score(ypred, ytrue):
+    """
+    Calculates F1 Score between prediction and ground-truth
+    Parameters
+    ----------
+    ypred: Numpy array
+    ytrue: Numpy array
+
+    Returns
+    -------
+    f1_raw: Numpy array
+    f1_weighted_mean: float
+    """
+    def my_equal(a, b):
+        return np.equal(b, a, dtype=int)
+
+    preds = np.unique(ypred)
+    trues = np.unique(ytrue)
+    vals  = np.union1d(preds,trues)[np.newaxis] # (n x 1)
+
+    b_pred = np.apply_along_axis(my_equal, axis=1, arr=vals.T, b=ypred)
+    b_true = np.apply_along_axis(my_equal, axis=1, arr=vals.T, b=ytrue)
+
+    tp = np.sum(np.logical_and(b_pred, b_true), axis=0)
+    all_true = np.sum(b_true, axis=0);
+    all_pred = np.sum(b_pred, axis=0);
+
+    f1_raw = 2 * tp / (all_true + all_pred);
+    f1_weighted_mean = np.sum(f1_raw * all_true / (np.sum(all_true)))
+
+    return f1_weighted_mean, f1_raw
