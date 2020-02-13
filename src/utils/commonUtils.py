@@ -3,6 +3,7 @@ import numpy as np
 def cohenKappa(confusionMatrix):
     """
     Calculates Cohen's kappa from a confusion matrix.
+    
     Parameters
     ----------
     confusionMatrix: Numpy array
@@ -28,6 +29,7 @@ def cohenKappa(confusionMatrix):
 def f1score(ypred, ytrue):
     """
     Calculates F1 Score between prediction and ground-truth
+
     Parameters
     ----------
     ypred: Numpy array
