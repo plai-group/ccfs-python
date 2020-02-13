@@ -41,6 +41,7 @@ def manyRandPerms(nVarTot, nVarSel, nTimes):
     terms.fill(np.nan)
 
     for n in range(nTimes):
+         # TODO: change maybe depending on idx
         rand_range = np.arange(1, nVarTot+1)
         terms[n,:] = np.random.permutation(rand_range)
 
