@@ -1,1 +1,1 @@
-# ccfs-python
+# Canonical Correlation Forests (CCFs)
