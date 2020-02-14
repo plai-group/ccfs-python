@@ -131,3 +131,25 @@ def random_missing_vals(X, mu=0, sig=1):
         X[bNaN] = sig * np.random.randn(nRands) + mu
 
     return X
+
+
+def randomRotation(N):
+    """
+    Random rotation matrix of given dimension
+
+    Parameters
+    ----------
+    N: int
+
+    Returns
+    -------
+    Q: Numpy array
+    """
+    Q, R = np.linalg.qr(np.random.randn(N, N))
+    Q = Q @ np.diag(np.sign(np.diag(R)))
+
+    detR = np.linalg.det(Q)
+    if np.round(detR) == -1:
+        Q[:, 0] = -Q[:, 0]
+
+    return Q
