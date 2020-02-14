@@ -88,3 +88,22 @@ def pcaLite(X, bScale=False, bMakeFullRank=True):
         coeff = np.divide(coeff, sig.T)
 
     return coeff, muX, vals
+
+
+def random_feature_expansion(X, w, b):
+    """
+    Used to expand the random features in kernel CCA
+
+    Parameters
+    ----------
+    X: Numpy array
+    w: Numpy array
+    b: Numpy array
+
+    Returns
+    -------
+    Z: Numpy array
+    """
+    Z = np.cos(np.add(X@w, b))
+
+    return Z
