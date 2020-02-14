@@ -3,7 +3,7 @@ import numpy as np
 def cohenKappa(confusionMatrix):
     """
     Calculates Cohen's kappa from a confusion matrix.
-    
+
     Parameters
     ----------
     confusionMatrix: Numpy array
@@ -58,3 +58,22 @@ def f1score(ypred, ytrue):
     f1_weighted_mean = np.sum(f1_raw * all_true / (np.sum(all_true)))
 
     return f1_weighted_mean, f1_raw
+
+
+def queryIfColumnsVary(X, tol):
+    """
+    Function that says whether columns are constant or not
+
+    Parameters
+    ----------
+    X: Numpy array
+    tol: Float
+
+    Returns
+    -------
+    bVar: Numpy Boolean array
+    """
+    bVar = np.max(np.abs(np.diff(X[0:min(5, X.shape[0]), :], axis=0)), axis=0) > tol
+    bVar[~bVar] = np.max(np.abs(np.diff(X[:, ~bVar], axis=0)), axis=0) > tol
+
+    return bVar
