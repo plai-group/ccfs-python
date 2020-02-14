@@ -107,3 +107,27 @@ def random_feature_expansion(X, w, b):
     Z = np.cos(np.add(X@w, b))
 
     return Z
+
+
+def random_missing_vals(X, mu=0, sig=1):
+    """
+    Randomly assigns missing values to draws from a normal with the mean and
+    standard deviation of the data.
+
+    Parameters
+    ----------
+    X: Numpy array
+    mu: float
+    sig: float
+
+    Returns
+    -------
+    X: Numpy array
+    """
+    bNaN   = np.isnan(X)
+    nRands = np.sum(bNaN[:])
+
+    if nRands != 0:
+        X[bNaN] = sig * np.random.randn(nRands) + mu
+
+    return X
