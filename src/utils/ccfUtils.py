@@ -74,7 +74,7 @@ def pcaLite(X, bScale=False, bMakeFullRank=True):
     X = np.subtract(X, muX)
     if bScale:
          sig = np.std(X, axis=0, ddof=1) # DDof set to 1 to match MATLAB std
-         X = np.divide(X, sig)
+         X   = np.divide(X, sig)
 
     _, v, coeff = np.linalg.svd(X)
 
@@ -153,3 +153,66 @@ def randomRotation(N):
         Q[:, 0] = -Q[:, 0]
 
     return Q
+
+
+def regCCA_alt(X, Y, gammaX, gammaY, corrTol):
+    """
+    Fast regularized CCA.  Used when doing kernel CCA.
+
+    Parameters
+    ----------
+    X: Numpy array
+    Y: Numpy array
+    gammaX: float
+    gammaY: float
+    corrTol: float
+
+    Returns
+    -------
+    Q: Numpy array
+    """
+    D = X.shape[1]
+    K = Y.shape[1]
+
+    XY = np.concatenate((X, Y), axis=1)
+    C = np.cov(XY, rowvar=False) # rowvar=False to match MATLAB
+
+    Cxx = C[0:D, 0:D] + (gammaX * np.eye(D))
+    Cyy = C[D:, D:] + (gammaY * np.eye(K))
+    Cxy = C[0:D, D:]
+
+    Cxx = 0.5 * (Cxx + Cxx.T);
+    Cyy = 0.5 * (Cyy + Cyy.T);
+
+    CholCxx = np.linalg.cholesky(Cxx).T
+    if CholCxx.shape[0] == CholCxx.shape[1]:
+        invCholCxx = np.linalg.solve(CholCxx, np.eye(D))
+    else:
+        invCholCxx = np.linalg.lstsq(CholCxx, np.eye(D))
+
+    CholCyy = np.linalg.cholesky(Cyy).T
+    if CholCyy.shape[0] == CholCyy.shape[1]:
+        invCholCyy = np.linalg.solve(CholCyy, np.eye(K))
+    else:
+        invCholCyy = np.linalg.lstsq(CholCyy, np.eye(K))
+
+    T = invCholCxx.T @ Cxy @ invCholCyy
+
+    if D >= K:
+        [L,S,D] = np.linalg.svd(T, 0)
+        r = np.diag(S)
+        A = invCholCxx @ L
+        B = invCholCyy @ D
+    else:
+        [L,S,D] = np.linalg.svd(T.T, 0);
+        r = np.diag(S)
+        A = invCholCxx @ D
+        B = invCholCyy @ L
+
+    bGreaterThanTol = np.absolute(r) > np.absolute(corrTol * np.max(np.absolute(r)))
+
+    A = A[:, bGreaterThanTol[0]]
+    B = B[:, bGreaterThanTol[0]]
+    r = r[bGreaterThanTol]
+
+    return A, B, r
