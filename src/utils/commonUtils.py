@@ -77,3 +77,20 @@ def queryIfColumnsVary(X, tol):
     bVar[~bVar] = np.max(np.abs(np.diff(X[:, ~bVar], axis=0)), axis=0) > tol
 
     return bVar
+
+
+def zScoreToX(zScore, mu_X, std_X):
+    """
+    Parameters
+    ----------
+    zScore: Numpy array
+    tol: Float
+
+    Returns
+    -------
+    X: Numpy array
+    """
+    X = np.add(zScore * std_X, mu_X)
+    X[np.isnan(X)] = 0
+
+    return X
