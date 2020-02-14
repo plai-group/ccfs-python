@@ -81,6 +81,8 @@ def queryIfColumnsVary(X, tol):
 
 def zScoreToX(zScore, mu_X, std_X):
     """
+    Convert Score to orginal X
+
     Parameters
     ----------
     zScore: Numpy array
