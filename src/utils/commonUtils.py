@@ -79,9 +79,50 @@ def queryIfColumnsVary(X, tol):
     return bVar
 
 
+def queryIfOnlyTwoUniqueRows(X):
+    """
+    Function that checks if an array has only two unique rows as this can
+    cause failure in case of LDA.
+
+    Parameters
+    ----------
+    X: Numpy array
+
+    Returns
+    -------
+    bVar: Numpy Boolean array
+    """
+    def my_equal(a, b):
+        return np.equal(a, b, dtype=int)
+
+    if X.shape[0] == 2:
+        bLessThanTwoUniqueRows = True
+        return bLessThanTwoUniqueRows
+
+    # TODO -- Fix this function to match MATLAB
+    eqX = np.apply_along_axis(my_equal, axis=1, arr=X, b=X[0,:])
+    bEqualFirst = (np.all(eqX, axis=1)[np.newaxis]).T
+
+    iFirstNotEqual = np.where(~bEqualFirst == True)
+    if len(iFirstNotEqual) == 0:
+        bLessThanTwoUniqueRows = True
+        return bLessThanTwoUniqueRows
+
+    iToCheck =  np.add(np.where(~bEqualFirst == True), 1)
+    print('trt', iToCheck)
+    Xit = np.apply_along_axis(my_equal, axis=1, arr=X[iToCheck, :], b=X[iFirstNotEqual[0], :])
+    print(Xit)
+    bNotUnique = np.all(Xit, axis=1)
+    print(bNotUnique)
+
+    bLessThanTwoUniqueRows = np.all(bNotUnique)
+
+    return bLessThanTwoUniqueRows
+
+
 def zScoreToX(zScore, mu_X, std_X):
     """
-    Convert Score to orginal X
+    Convert Score back to X
 
     Parameters
     ----------
@@ -96,3 +137,33 @@ def zScoreToX(zScore, mu_X, std_X):
     X[np.isnan(X)] = 0
 
     return X
+
+
+def makeSureString(A, nSigFigTol):
+    """
+    Ensure that all numerical values are strings
+
+    Parameters
+    ----------
+    A: Numpy array
+    nSigFigTol: Float
+
+    Returns
+    -------
+    A: Numpy array
+    """
+    def is_numeric(val):
+        try:
+            float(val)
+        except ValueError:
+            return False
+        else:
+            return True
+
+    # bNum = lambda x: np.array(map(is_numeric, x)) # return numpy array
+    #
+    # print(bNum)
+
+    # TODO
+
+    return A
