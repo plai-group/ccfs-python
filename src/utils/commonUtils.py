@@ -138,6 +138,34 @@ def zScoreToX(zScore, mu_X, std_X):
 
     return X
 
+def is_numeric(X, compress=True):
+    """
+    Determine whether input is numeric array
+
+    Parameters
+    ----------
+    X: Numpy array
+    compress: Boolean
+
+    Returns
+    -------
+    V: Numpy Boolean array if compress is False, otherwise Boolean Value
+    """
+    def is_float(val):
+        try:
+            float(val)
+        except ValueError:
+            return False
+        else:
+            return True
+
+    isnumeric = np.vectorize(is_float, otypes=[bool]) # return numpy array
+    V = isnumeric(X)
+
+    if compress:
+        return np.all(V)
+
+    return V
 
 def makeSureString(A, nSigFigTol):
     """
@@ -152,13 +180,7 @@ def makeSureString(A, nSigFigTol):
     -------
     A: Numpy array
     """
-    def is_numeric(val):
-        try:
-            float(val)
-        except ValueError:
-            return False
-        else:
-            return True
+
 
     # bNum = lambda x: np.array(map(is_numeric, x)) # return numpy array
     #
