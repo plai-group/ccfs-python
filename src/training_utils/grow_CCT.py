@@ -77,4 +77,4 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     indFeatIn = np.random.randint(low=0, high=iCanBeSelected.size, size=lambda_)
     iFeatIn   = iCanBeSelected[indFeatIn]
 
-    bInMat = np.equal(sTranspose(X=iFeatureNum.flatten()), np.sort(iFeatIn.flatten()))
+    bInMat = np.equal(sVT(X=iFeatureNum.flatten()), np.sort(iFeatIn.flatten()))

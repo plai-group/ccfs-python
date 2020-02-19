@@ -87,9 +87,9 @@ def fastUnique(X):
     return uX
 
 
-def sTranspose(X):
+def sVT(X):
     """
-    Transpose numpy array even if only single dimension exist
+    Transpose numpy array for single dimension array.
 
     Parameters
     ----------
@@ -100,9 +100,12 @@ def sTranspose(X):
     sX: Vector array
     """
     if len(X.shape) == 1:
-        X = X[np.newaxis]
+        sX = X[np.newaxis]
+        return sX.T
+    else:
+        sX = X.T
 
-    return X.T
+        return sX[0]
 
 
 def queryIfColumnsVary(X, tol):
