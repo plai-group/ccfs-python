@@ -35,7 +35,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         options["mseTotal"] = YTrain.var(axis=0)
 
     """
-    First do checks for whether we should immediately terminate
+    # First do checks for whether we should immediately terminate
     """
     N = XTrain.shape[0]
     # Return if one training point, pure node or if options for returning
@@ -66,6 +66,5 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
              return tree
 
     """
-    Subsample features as required for hyperplane sampling
+    # Subsample features as required for hyperplane sampling
     """
-    

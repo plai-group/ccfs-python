@@ -60,6 +60,33 @@ def f1score(ypred, ytrue):
     return f1_weighted_mean, f1_raw
 
 
+def fastUnique(X):
+    """
+    Unique values in array
+
+    Parameters
+    ----------
+    X: Numpy Vector array
+
+    Returns
+    -------
+    uX: Numpy array
+    """
+    is_row = False # Check Row or Column vector
+    if len(X.shape) == 1:
+        uX = np.sort(X) # Row Vector
+        is_row = True
+    else:
+        uX = np.sort(X, axis=0) # Column Vector
+
+    if is_row:
+        uX = uX[np.concatenate((np.array([True]), np.diff(uX, n=1, axis=0) !=0), axis=0)]
+    else:
+        uX = uX[np.concatenate((np.array([[True]]), np.diff(uX, n=1, axis=0) !=0), axis=0)][np.newaxis].T
+
+    return uX
+
+
 def queryIfColumnsVary(X, tol):
     """
     Function that says whether columns are constant or not
