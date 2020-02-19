@@ -165,6 +165,7 @@ def zScoreToX(zScore, mu_X, std_X):
 
     return X
 
+
 def is_numeric(X, compress=True):
     """
     Determine whether input is numeric array
@@ -193,6 +194,7 @@ def is_numeric(X, compress=True):
         return np.all(V)
 
     return V
+
 
 def makeSureString(A, nSigFigTol):
     """
