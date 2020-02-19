@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.linalg as la
 from utils.ccfUtils import randomRotation
 from utils.commonUtils import queryIfColumnsVary
 
@@ -74,3 +75,93 @@ def componentAnalysis(X, Y, processes, epsilon):
         # PCA projection
         pcaCoeff = pcaLite(X=X)
         projMat  = np.concatenate((projMat, pcaCoeff), axis=1)
+
+    if processes['CCA'] or processes['CCAclasswise']:
+        # CCA based projections
+        q1, r1, p1 = la.qr(X, pivoting=True)
+        # Reduce to full rank within some tolerance
+        if r1.size == 0:
+            rankX = 0
+        else:
+            rankX = np.sum(np.abs(np.diag(r1)) >= (epsilon * np.abs(r1[0])))
+
+        if rankX == 0:
+            A = np.concatenate((np.array([[1]]), np.zeros((nXorg - 1, 1))))
+            B = np.concatenate((np.array([[1]]), np.zeros((nYorg - 1, 1))))
+            U = X[:, 0]
+            V = Y[:, 0]
+            r = 0
+
+            return A, B, U, V, r
+
+        elif rankX < x2:
+            q1 = q1[:, 0:rankX]
+            r1 = r1[0:rankX, 0:rankX]
+
+        if processes['CCA']:
+            q2, r2, p2 = la.qr(Y, pivoting=True)
+            # Reduce to full rank within some tolerance
+            if r2.size == 0:
+                rankY = 0
+            else:
+                rankY = np.sum(np.abs(np.diag(r2)) >= (epsilon * np.abs(r2[0])))
+
+            if rankY == 0:
+                A = np.concatenate((np.array([[1]]), np.zeros((nXorg - 1, 1))))
+                B = np.concatenate((np.array([[1]]), np.zeros((nYorg - 1, 1))))
+                U = X[:, 0]
+                V = Y[:, 0]
+                r = 0
+
+                return A, B, U, V, r
+
+            elif rankY < K:
+                q2 = q2[:, 0:rankY]
+
+            # Solve CCA using the decompositions, taking care to use minimal
+            # complexity orientation for SVD.  Note the two calculations are
+            # equivalent except in computational complexity
+            d = min(rankX, rankY)
+
+            if rankX >= rankY:
+                L, D, M = np.linalg.svd(q1.T @ q2)
+            else:
+                M, D, L = np.linalg.svd(q2.T @ q1)
+
+            locProj = linalg.solve(r1, L[:, 0:d] * np.sqrt(x1 - 1))
+            # Put coefficients back to their full size and their correct order
+            locProj[p1, :] = np.concatenate((locProj, np.zeros((x2-rankX, d)))) # Maybe fix with axis
+            projMat = np.concatenate((projMat, locProj)) # Maybe fix with axis
+
+            r2 = r2[0:rankY, 0:rankY]
+            locyProj = linalg.solve(r2, M[:, 0:d] * np.sqrt(x1-1))
+            locyProj[p2, :] = np.concatenate((locyProj, np.zeros((K-rankY, d))))
+            yprojMat = np.concatenate((yprojMat,locyProj)) # Maybe fix with axis
+
+            r = min(max(diag(D(:,1:d))', 0), 1)
+
+        if processes['CCAclasswise']:
+            # Consider each output in an in / out fashion to generate a set of K projections.
+            L, _, _ = np.linalg.svd(q1.T @ Y[:, k])
+            locProj = r1 \ L(:,1) * sqrt(x1-1);
+            locProj[p1, :] = np.concatenate((locProj, np.zeros((x2-rankX,1))))
+            projMat = np.concatenate((projMat,locProj))
+
+    # Normalize the projection matrices.  This ensures that the later tests for
+    # close points are triggered appropriately and is useful for interpretability.
+    projMat = np.divide(projMat, np.sqrt(np.sum(projMat**2, axis=0)))
+
+    # Note that as in general only a projection matrix is given, we need to
+    # add the mean back to be consistent with general use.  This equates to
+    # addition of a constant term to each column in U
+    U = X @ projMat
+    V = Y @ yprojMat
+
+    # Finally, add back in the empty rows in the projection matrix for the
+    # things which didn't vary
+    A = np.zeros((nXorg, projMat.shape[1]))
+    A[bXVaries, :] = projMat
+    B = np.zeros((nYorg, yprojMat.shape[1]))
+    B[bYvaries, :] = yprojMat
+
+    return A, B, U, V, r
