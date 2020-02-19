@@ -3,6 +3,7 @@ import numpy as np
 from utils.commonUtils import is_numeric
 from utils.commonUtils import fastUnique
 from utils.commonUtils import sTranspose
+from utils.commonUtils import queryIfColumnsVary
 
 logger  = logging.getLogger(__name__)
 
@@ -31,15 +32,15 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
     Returns
     -------
-    tree         = Structure containing learnt tree
+    tree        = Structure containing learnt tree
     """
     # Set any missing required variables
     if (options["mseTotal"]).size == 0:
         options["mseTotal"] = YTrain.var(axis=0)
 
-    """
+    # --------------------------------------------------------------------------
     # First do checks for whether we should immediately terminate
-    """
+    # --------------------------------------------------------------------------
     N = XTrain.shape[0]
     # Return if one training point, pure node or if options for returning
     # fulfilled.  A little case to deal with a binary YTrain is required.
@@ -52,8 +53,8 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
     if bStop:
         tree = setupLeaf(YTrain, bReg, options)
-
         return tree
+
     elif:
         # Check class variation
         sumY = np.sum(YTrain, axis=0)
@@ -61,6 +62,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         if ~(np.any(bYVaries)):
             tree = setupLeaf(YTrain,bReg,options);
             return tree
+
     else:
         # Check if variance in Y is less than the cut off amount
          varY = YTrain.var(axis=0)
@@ -68,9 +70,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
              tree = setupLeaf(YTrain, bReg, options)
              return tree
 
-    """
+    # --------------------------------------------------------------------------
     # Subsample features as required for hyperplane sampling
-    """
+    # --------------------------------------------------------------------------
     iCanBeSelected = fastUnique(X=iFeatureNum)
     iCanBeSelected[np.isnan(iCanBeSelected)] = []
     lambda_   = min(len(iCanBeSelected), options["lambda"])
@@ -78,3 +80,63 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     iFeatIn   = iCanBeSelected[indFeatIn]
 
     bInMat = np.equal(sVT(X=iFeatureNum.flatten()), np.sort(iFeatIn.flatten()))
+
+    iIn = (np.any(bInMat, axis=0)).ravel().nonzero()[0][0]
+
+    # Check for variation along selected dimensions and
+    # resample features that have no variation
+    bXVaries = queryIfColumnsVary(X=XTrain[:, iIn], tol=options["XVariationTol"])
+
+    if not np.all(bXVaries):
+        iInNew = iIn
+        nSelected = 0
+        iIn = iIn[bXVaries]
+
+        while not all(bXVaries) and lambda_ > 0:
+            iFeatureNum[iInNew[~bXVaries]] = np.nan
+            bInMat[:, iInNew[~bXVaries]] = False
+            bRemainsSelected = np.any(bInMat, aixs=1)
+            nSelected = nSelected + bRemainsSelected.sum(axis=0)
+            iCanBeSelected[indFeatIn] = []
+            lambda_   = min(iCanBeSelected.size, options["lambda"]-nSelected)
+            if lambda_ < 1:
+                break
+            indFeatIn = np.random.randint(low=0, high=iCanBeSelected.size, size=lambda_)
+            iFeatIn   = iCanBeSelected[indFeatIn]
+            bInMat    = np.equal(sVT(X=iFeatureNum.flatten()), np.sort(iFeatIn.flatten()))
+            iInNew    = (np.any(bInMat, axis=0)).ravel().nonzero()[0][0]
+            bXVaries  = queryIfColumnsVary(X=XTrain[:, iInNew], tol=options["XVariationTol"])
+            iInNew    = np.sort(np.concatenate(iIn, iInNew[bXVaries]))
+
+    if iIn.size == 0:
+        # This means that there was no variation along any feature, therefore exit.
+        tree = setupLeaf(YTrain, bReg, options)
+        return tree
+
+    # --------------------------------------------------------------------------
+    # Projection bootstrap if required
+    # --------------------------------------------------------------------------
+    if options["bProjBoot"]:
+        iTrainThis = np.random.randint(N, size=(N,1))
+        XTrainBag  = XTrain[iTrainThis, iIn]
+        YTrainBag  = YTrain[iTrainThis, :]
+    else:
+        XTrainBag = XTrain[:, iIn]
+        YTrainBag = YTrain
+
+    bXBagVaries = queryIfColumnsVary(X=XTrainBag, tol=options["XVariationTol"])
+
+    if not np.any(bXBagVaries) or\
+        (not bReg and YTrainBag.shape[1] > 1  and (np.sum(np.absolute(np.sum(YTrainBag, axis=0)) > 1e-12) < 2)) or\
+        (not bReg and YTrainBag.shape[1] == 1 and np.any(np.sum(YTrainBag, axis=0) == [0, YTrainBag.shape[0]])) or\
+        (bReg and np.all(var(YTrainBag) < (options["mseTotal"] * options["mseErrorTolerance"]))):
+        if not options["bContinueProjBootDegenerate"]:
+            tree = setupLeaf(YTrain, bReg, options)
+            return tree
+        else:
+            XTrainBag = XTrain[:, iIn]
+            YTrainBag = YTrain
+
+    # --------------------------------------------------------------------------
+    # Check for only having two points
+    # --------------------------------------------------------------------------
