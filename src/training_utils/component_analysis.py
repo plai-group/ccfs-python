@@ -138,14 +138,15 @@ def componentAnalysis(X, Y, processes, epsilon):
             locyProj[p2, :] = np.concatenate((locyProj, np.zeros((K-rankY, d))))
             yprojMat = np.concatenate((yprojMat,locyProj)) # Maybe fix with axis
 
-            r = min(max(diag(D(:,1:d))', 0), 1)
+            r = np.minimum(np.maximum(np.diag(D[:,1:d]).T, 0), 1)
 
         if processes['CCAclasswise']:
             # Consider each output in an in / out fashion to generate a set of K projections.
-            L, _, _ = np.linalg.svd(q1.T @ Y[:, k])
-            locProj = r1 \ L(:,1) * sqrt(x1-1);
-            locProj[p1, :] = np.concatenate((locProj, np.zeros((x2-rankX,1))))
-            projMat = np.concatenate((projMat,locProj))
+            for k in range(K):
+                L, _, _ = np.linalg.svd(q1.T @ Y[:, k])
+                locProj = linalg.solve(r1, L[:, 0] * np.sqrt(x1-1))
+                locProj[p1, :] = np.concatenate((locProj, np.zeros((x2-rankX,1))))
+                projMat = np.concatenate((projMat,locProj))
 
     # Normalize the projection matrices.  This ensures that the later tests for
     # close points are triggered appropriately and is useful for interpretability.
