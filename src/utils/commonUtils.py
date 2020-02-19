@@ -87,6 +87,24 @@ def fastUnique(X):
     return uX
 
 
+def sTranspose(X):
+    """
+    Transpose numpy array even if only single dimension exist
+
+    Parameters
+    ----------
+    X: Numpy Vector array
+
+    Returns
+    -------
+    sX: Vector array
+    """
+    if len(X.shape) == 1:
+        X = X[np.newaxis]
+
+    return X.T
+
+
 def queryIfColumnsVary(X, tol):
     """
     Function that says whether columns are constant or not

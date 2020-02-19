@@ -1,6 +1,9 @@
 import logging
 import numpy as np
 from utils.commonUtils import is_numeric
+from utils.commonUtils import fastUnique
+from utils.commonUtils import sTranspose
+
 logger  = logging.getLogger(__name__)
 
 def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
@@ -68,3 +71,10 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     """
     # Subsample features as required for hyperplane sampling
     """
+    iCanBeSelected = fastUnique(X=iFeatureNum)
+    iCanBeSelected[np.isnan(iCanBeSelected)] = []
+    lambda_   = min(len(iCanBeSelected), options["lambda"])
+    indFeatIn = np.random.randint(low=0, high=iCanBeSelected.size, size=lambda_)
+    iFeatIn   = iCanBeSelected[indFeatIn]
+
+    bInMat = np.equal(sTranspose(X=iFeatureNum.flatten()), np.sort(iFeatIn.flatten()))
