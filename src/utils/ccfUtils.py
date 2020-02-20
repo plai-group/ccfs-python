@@ -168,7 +168,7 @@ def regCCA_alt(X, Y, gammaX, gammaY, corrTol):
 
     Returns
     -------
-    Q: Numpy array
+    A: Numpy array
     """
     D = X.shape[1]
     K = Y.shape[1]

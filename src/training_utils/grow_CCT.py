@@ -5,8 +5,10 @@ from utils.commonUtils import fastUnique
 from utils.commonUtils import sTranspose
 from utils.commonUtils import queryIfColumnsVary
 from utils.commonUtils import queryIfOnlyTwoUniqueRows
+from utils.ccfUtils import regCCA_alt
 from utils.ccfUtils import random_feature_expansion
 from utils.ccfUtils import genFeatureExpansionParameters
+from component_analysis import componentAnalysis
 from twopoint_max_marginsplit import twoPointMaxMarginSplit
 
 logger  = logging.getLogger(__name__)
@@ -191,8 +193,35 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         else:
             bLessThanTrain = (XTrain[:, iIn] * projMat) <= partitionPoint
             iDir = 1
+    else:
+        # Generate the new features as required
+        if options["bRCCA"]:
+            wZ, bZ  = genFeatureExpansionParameters(XTrainBag, options["rccaNFeatures"], options["rccaLengthScale"])
+            fExp    = makeExpansionFunc(wZ, bZ, options["rccaIncludeOriginal"])
+            projMat, _, _ = regCCA_alt(XTrainBag, YTrainBag, options["rccaRegLambda"], options["rccaRegLambda"], 1e-8)
+            if projMat.size == 0:
+                projMat = np.ones((XTrainBag.shape[1], 1))
+            UTrain = fExp(XTrain[:, iIn]) @ projMat
 
-         # Generate the new features as required
-         if options["bRCCA"]:
-             wZ, bZ = genFeatureExpansionParameters(XTrainBag, options["rccaNFeatures"], options["rccaLengthScale"])
-             fExp   = makeExpansionFunc(wZ, bZ, options["rccaIncludeOriginal"])
+        else:
+            projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
+            UTrain = XTrain[:, iIn] @ projMat
+
+        #-----------------------------------------------------------------------
+        # Check for only having two points
+        #-----------------------------------------------------------------------
+
+        # This step catches splits based on no significant variation
+        bUTrainVaries = queryIfColumnsVary(UTrain, options["XVariationTol"])
+
+        if not np.any(bUTrainVaries):
+            tree = setupLeaf(YTrain,bReg,options);
+
+        UTrain  = UTrain[:, bUTrainVaries]
+        projMat = projMat[:, bUTrainVaries]
+
+        if options["bUseOutputComponentsMSE"] and bReg and (YTrain.shape[1] > 1) and\
+           (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
+           VTrain = YTrain @ yprojMat
+
+        
