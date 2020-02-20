@@ -4,9 +4,51 @@ from utils.commonUtils import is_numeric
 from utils.commonUtils import fastUnique
 from utils.commonUtils import sTranspose
 from utils.commonUtils import queryIfColumnsVary
+from utils.commonUtils import queryIfOnlyTwoUniqueRows
+from utils.ccfUtils import random_feature_expansion
+from utils.ccfUtils import genFeatureExpansionParameters
+from twopoint_max_marginsplit import twoPointMaxMarginSplit
 
 logger  = logging.getLogger(__name__)
 
+def setupLeaf(YTrain, bReg, options):
+    """
+    Update tree struct to make node a leaf
+    """
+    tree = {}
+    tree["bLeaf"]   = True
+    tree["Npoints"] = YTrain.shape[0]
+    tree["mean"]    = np.mean(YTrain, axis=0)
+
+    if bReg:
+        tree["std_dev"] = np.std(YTrain, axis=0, ddof=1)
+        # If a mapping has been applied, invert it
+        if not (options["org_stdY"].size == 0):
+            tree["mean"] = tree["mean"] * options["org_stdY"]
+            tree["std_dev"] = tree["std_dev"] * options["org_stdY"]
+
+        if not (options["org_muY"].size == 0):
+            tree["mean"] = tree["mean"] + options["org_muY"]
+
+    return tree
+
+def makeExpansionFunc(wZ, bZ, bIncOrig):
+    if bIncOrig:
+        f = lambda x: np.concatenate((x, random_feature_expansion(x, wZ, bZ)))
+    else:
+        f = lambda x: random_feature_expansion(x, wZ, bZ)
+
+    return f
+
+def calc_mse(cumtotal, cumsq, YTrainSort):
+    value = np.divide(cumsq, (np.arange(0:YTrainSort.shape[0])).T) -\
+            np.divide(cumtotal[0:-1, :]**2  + YTrainSort**2 +\
+                      2*cumtotal(1:end-1,:) * YTrainSort,\
+                      (np.arange(0:YTrainSort.shape[0]**2)).T)
+
+    return value
+
+#-------------------------------------------------------------------------------
 def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     """
     This function applies greedy splitting according to the CCT algorithm and the
@@ -30,6 +72,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                   replaced with NaNs.
     depth       = Current tree depth (zero based)
 
+
     Returns
     -------
     tree        = Structure containing learnt tree
@@ -38,9 +81,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     if (options["mseTotal"]).size == 0:
         options["mseTotal"] = YTrain.var(axis=0)
 
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # First do checks for whether we should immediately terminate
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     N = XTrain.shape[0]
     # Return if one training point, pure node or if options for returning
     # fulfilled.  A little case to deal with a binary YTrain is required.
@@ -70,9 +113,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
              tree = setupLeaf(YTrain, bReg, options)
              return tree
 
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Subsample features as required for hyperplane sampling
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     iCanBeSelected = fastUnique(X=iFeatureNum)
     iCanBeSelected[np.isnan(iCanBeSelected)] = []
     lambda_   = min(len(iCanBeSelected), options["lambda"])
@@ -113,9 +156,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         tree = setupLeaf(YTrain, bReg, options)
         return tree
 
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Projection bootstrap if required
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     if options["bProjBoot"]:
         iTrainThis = np.random.randint(N, size=(N,1))
         XTrainBag  = XTrain[iTrainThis, iIn]
@@ -137,6 +180,20 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             XTrainBag = XTrain[:, iIn]
             YTrainBag = YTrain
 
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Check for only having two points
-    # --------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    if (not (options["projection"].size == 0)) and ((XTrainBag.shape[0] == 1) or queryIfOnlyTwoUniqueRows(X=XTrainBag)):
+        bSplit, projMat, partitionPoint = twoPointMaxMarginSplit(XTrainBag, YTrainBag, options["XVariationTol"])
+        if not bSplit:
+            tree = setupLeaf(YTrain, bReg, options)
+            return tree
+
+        else:
+            bLessThanTrain = (XTrain[:, iIn] * projMat) <= partitionPoint
+            iDir = 1
+
+         # Generate the new features as required
+         if options["bRCCA"]:
+             wZ, bZ = genFeatureExpansionParameters(XTrainBag, options["rccaNFeatures"], options["rccaLengthScale"])
+             fExp   = makeExpansionFunc(wZ, bZ, options["rccaIncludeOriginal"])
