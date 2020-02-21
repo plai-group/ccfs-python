@@ -266,15 +266,15 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                     rTerm = -pR**2
                 elif split_criterion =='info':
                     lTerm = np.multiply(-pL, np.log2(pL))
-                    lTerm[pL==0] = 0
+                    lTerm[pL == 0] = 0
                     rTerm = np.multiply(-pR, np.log2(pL))
-                    rTerm[pR==0] = 0
+                    rTerm[pR == 0] = 0
                  else:
                      assert (True), 'Invalid split criterion!'
 
                 if YTrain.shape[1] == 1 || options["bSepPred"]:
                     # Add grouped terms back together
-                    end = YTrain.shape[1]
+                    end   = YTrain.shape[1]
                     lTerm = lTerm[:, 0:end//2] + lTerm[:, end//2:end]
                     rTerm = rTerm[:, 0:end//2] + rTerm[:, end//2:end]
 
@@ -286,13 +286,12 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                     # Need to do grouped sums for each of the outputs as will be
                     # doing more than a simple averaging of there values
                    metricLeft = np.cumsum(lTerm, axis=1)
-                   taskidxs = np.concatenate((options.task_ids(2:end)-1, end))
-                   metricLeft = metricLeft[:, [options["task_ids"][2:end)-1,end]] -
-                                 [np.zeros(size(metricLeft,1),1),metricLeft(:,options.task_ids(2:end)-1)];
-                   metricRight = np.cumsum(rTerm, axis=1)
-                   metricRight = metricRight(:,[options.task_ids(2:end)-1,end])-...
-                       [zeros(size(metricRight,1),1),metricRight(:,options.task_ids(2:end)-1)];
+                   taskidxs_L = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
+                   metricLeft = metricLeft[:, taskidxs_L] - np.concatenate((np.zeros((metricLeft.shape[0], 1)), metricLeft[:, (options["task_ids"][1:] - 1)]))
 
+                   metricRight = np.cumsum(rTerm, axis=1)
+                   taskidxs_R  = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
+                   metricRight = metricRight(:, taskidxs_R)- np.concatenate((np.zeros((metricRight.shape[0], 1)), metricRight[:, (options["task_ids"][1:] - 1)]))
             else:
                 if options["splitCriterion"] == 'mse':
                     cumSqLeft = np.cumsum(VTrainSort**2)
@@ -303,14 +302,11 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                         tree = setupLeaf(YTrain, bReg, options);
                         return tree
 
-                    metricLeft = calc_mse([zeros(1,size(VTrainSort,2));leftCum],cumSqLeft,VTrainSort);
+                    cumtotal_l = np.concatenate((np.zeros((1, VTrainSort.shape[1])), leftCum))
+                    metricLeft = calc_mse(cumtotal=cumtotal_l, cumsq=cumSqLeft, YTrainSort=VTrainSort)
                     # For calculating the right need to go in additive order again
                     # so go from other end and then flip
-                    metricRight = [zeros(1,size(VTrainSort,2));...
-                        calc_mse(rightCum(end:-1:1,:),...
-                        bsxfun(@minus,cumSqLeft(end,:),cumSqLeft(end-1:-1:1,:)),...
-                        VTrainSort(end:-1:2,:))];
-
+                    metricRight = np.concatenate((np.zeros((1, VTrainSort.shape[1])), calc_mse(rightCum[-1::-1, :], np.subtract(cumSqLeft[-1, :], cumSqLeft[-2::-1, :]), VTrainSort[-1:0:-1, :])))
                     metricRight = metricRight[-1:0:-1, :]
                     # No need to do the grouping for regression as each must be
                     # a seperate output anyway.
@@ -410,16 +406,10 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         treeRight = growCCT(XTrain[~bLessThanTrain,:], YTrain[~bLessThanTrain, :], bReg, options, iFeatureNum, depth+1)
         tree["iIn"] = iIn
 
-        # Ensure variable is defined
-        try:
-            x
-        except NameError:
-            x = None
-
         if options["bRCCA"]:
             try:
                 if inspect.isfunction(fExp):
-                    tree["featureExpansion"] = fExp
+                    tree["featureExpansion"] = fExp # Ensure variable is defined
             except NameError:
                 pass
 
