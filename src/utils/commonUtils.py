@@ -141,27 +141,23 @@ def queryIfOnlyTwoUniqueRows(X):
     bVar: Numpy Boolean array
     """
     def my_equal(a, b):
-        return np.equal(a, b, dtype=int)
+        return np.equal(b, a, dtype=int)
 
     if X.shape[0] == 2:
         bLessThanTwoUniqueRows = True
         return bLessThanTwoUniqueRows
 
-    # TODO -- Fix this function to match MATLAB
     eqX = np.apply_along_axis(my_equal, axis=1, arr=X, b=X[0,:])
     bEqualFirst = (np.all(eqX, axis=1)[np.newaxis]).T
 
-    iFirstNotEqual = np.where(~bEqualFirst == True)
-    if len(iFirstNotEqual) == 0:
+    iFirstNotEqual = (~bEqualFirst).ravel().nonzero()[0]
+    if iFirstNotEqual.size == 0:
         bLessThanTwoUniqueRows = True
         return bLessThanTwoUniqueRows
 
-    iToCheck =  np.add(np.where(~bEqualFirst == True), 1)
-    print('trt', iToCheck)
+    iToCheck = ((~bEqualFirst[1:]).ravel().nonzero()[0]) + 1
     Xit = np.apply_along_axis(my_equal, axis=1, arr=X[iToCheck, :], b=X[iFirstNotEqual[0], :])
-    print(Xit)
     bNotUnique = np.all(Xit, axis=1)
-    print(bNotUnique)
 
     bLessThanTwoUniqueRows = np.all(bNotUnique)
 
@@ -217,7 +213,7 @@ def is_numeric(X, compress=True):
     return V
 
 
-def makeSureString(A, nSigFigTol):
+def makeSureString(A, nSigFigTol, access_all = False):
     """
     Ensure that all numerical values are strings
 
@@ -230,12 +226,36 @@ def makeSureString(A, nSigFigTol):
     -------
     A: Numpy array
     """
+    # To Match MATLAB function
+    def num2str(val):
+        print(val)
+        if val <= 9:
+            try:
+                rval = ord(str(val))
+            except ValueError or TypeError:
+                return val
+            else:
+                return rval
+        else:
+            return val
 
-
-    # bNum = lambda x: np.array(map(is_numeric, x)) # return numpy array
-    #
-    # print(bNum)
-
-    # TODO
+    if type(A) == int or type(A) == float:
+        bNum = is_numeric(A)
+        if bNum:
+            A = num2str(A)
+    else:
+        if A.size > 1 and access_all:
+            num2str_f = np.vectorize(num2str, otypes=[float]) # return numpy array
+            bNum = is_numeric(A)
+            if bNum:
+                A = num2str_f(A)
+        elif A.size > 1:
+            bNum = is_numeric(A)
+            if bNum:
+                A[0,0] = num2str(A[0,0])
+        else:
+            bNum = is_numeric(A)
+            if bNum:
+                A = num2str(A)
 
     return A
