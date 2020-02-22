@@ -41,7 +41,7 @@ def manyRandPerms(nVarTot, nVarSel, nTimes):
     terms.fill(np.nan)
 
     for n in range(nTimes):
-        rand_range = np.arange(0, nVarTot) # Changed to match Python Idxing
+        rand_range = np.arange(0, nVarSel) # Changed to match Python Idxing
         terms[n,:] = np.random.permutation(rand_range)
 
     return terms
@@ -215,3 +215,31 @@ def regCCA_alt(X, Y, gammaX, gammaY, corrTol):
     r = r[bGreaterThanTol]
 
     return A, B, r
+
+
+def mat_unique(X):
+    """
+    Unique values in array similar to MATLAB
+
+    Parameters
+    ----------
+    X: Numpy array
+    """
+    C  = np.unique(X)
+    X_ = X.flatten(order='F') # To match MATLAB
+
+    # Ia
+    ia = []
+    for x_ in C:
+        idxs = np.where(x_ == X_)[0]
+        idxs = idxs[0] # Get only the integer
+        ia.append(idxs)
+
+    # Ic
+    ic = []
+    for x_ in X_:
+        idxs = np.where(x_ == C)[0]
+        idxs = idxs[0] # Get only the integer
+        ic.append(idxs)
+
+    return C, np.array(ia), np.array(ic)
