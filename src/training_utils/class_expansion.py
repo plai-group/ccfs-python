@@ -56,6 +56,10 @@ def classExpansion(Y, N, optionsFor):
         Ycell   = {}
         for n in range(Y.shape[1]):
             [Ycell{n}, classes{n}, optionsFor] = classExpansion(Y[:, n], N, optionsFor)
+        
         y_sizes = cellfun(@(x) size(x,2), Ycell);
         Y = cell2mat(Ycell);
         optionsFor["task_ids"] = 1+[0,cumsum(y_sizes(1:end-1))]
+
+
+    return Y, classes, optionsFor
