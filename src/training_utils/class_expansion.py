@@ -42,7 +42,11 @@ def classExpansion(Y, N, optionsFor):
 
         optionsFor["task_ids"] = 1
 
-    # TODO: Dataframe support
+    elif isinstance(Y, pd.DataFrame):
+        # TODO: Add support for dataframe
+        assert (True), 'Dataframe support not yet implemented!'
+        continue
+
     elif np.array_equal(Y, Y.astype(bool)) or (np.max(Y.flatten()) == 1 and np.min(Y.flatten()) == 0):
         N_c_present = np.cumsum(Y, axis=1)
         if np.all(N_c_present[:,] == 1) and (not optionsFor["bSepPred"]):
