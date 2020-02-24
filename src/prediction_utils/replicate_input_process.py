@@ -1,3 +1,4 @@
+import numpy as np
 from utils.commonUtils import is_numeric
 from utils.commonUtils import makeSureString
 
@@ -9,12 +10,12 @@ def replicateInputProcess(Xraw, InputProcessDetails):
     stored in the forest.
     """
     bOrdinal = InputProcessDetails["bOrdinal"]
-    Cats = InputProcessDetails["Cats"]
+    Cats     = InputProcessDetails["Cats"]
 
-    if size(Xraw.shape[1] != bOrdinal.size:
-        assert (True), 'Incorrect number of features'
+    if Xraw.shape[1] != bOrdinal.size:
+        assert (True), 'Incorrect number of features!'
 
-    # #  Add support for dataframe
+    # TODO: Add support for dataframe
     # if istable(Xraw):
     #     try:
     #         Xraw = table2array(Xraw)
@@ -22,31 +23,13 @@ def replicateInputProcess(Xraw, InputProcessDetails):
     #         Xraw = table2cell(Xraw)
 
     X = Xraw[:, bOrdinal]
-    if type(f) is dict:
-        bNumeric = is_numeric(X)
+
+    if isinstance(XTrainRC, pd.DataFrame):
+        # TODO: Add support for dataframe
+        continue
+        # bNumeric = is_numeric(X=X, compress=False)
 
     XCat = Xraw[:, ~bOrdinal]
-    if iscell(XCat)
-        XCat = makeSureString(XCat,10);
-    end
-
-    for n in range(XCat.shape[1]):
-        nCats = Cats[n].size
-
-        if nCats == 1:
-            continue
-
-        sizeSoFar = X.shape[1]
-
-        X = [X, np.zeros((X.shape[0], nCats))]
-        for c in range(nCats):
-            if iscell(Cats{n})
-                X(strcmp(XCat(:,n),Cats{n}{c}),(sizeSoFar+c)) = 1;
-            else
-                X(XCat(:,n)==Cats{n}(c),(sizeSoFar+c)) = 1;
-            end
-        end
-    end
 
     X = np.divide(np.subtract(X, InputProcessDetails["mu_XTrain"]), InputProcessDetails["std_XTrain"])
 

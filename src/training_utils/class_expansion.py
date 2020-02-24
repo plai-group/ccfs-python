@@ -1,6 +1,9 @@
+import logging
 import numpy as np
 from utils.commonUtils import sVT
 from utils.ccfUtils import mat_unique
+
+logger  = logging.getLogger(__name__)
 
 def classExpansion(Y, N, optionsFor):
     """
@@ -30,12 +33,13 @@ def classExpansion(Y, N, optionsFor):
         switched on because non-mutually exclusive classes.
     """
     if Y.shape[0] == N and Y.shape[1] == 1:
-        assert (Y.shape[0] == N and Y.shape[1] == 1) ,'Seperate in-out prediction is only valid when Y is a logical array'
+        assert (not optionsFor["bSepPred"]), 'Seperate in-out prediction is only valid when Y is a logical array'
         classes, _, Yindexes = mat_unique(Y)
         Y  = np.empty((Yindexes.shape[0], classes.size))
         Y.fill(False)
-        for k in range(classes.size)
-            Y[:, k] = k == Yindexes
+        for k in range(classes.size):
+            Y[:, k] = (k == Yindexes)
+
         optionsFor["task_ids"] = 1
 
     # TODO: Dataframe support
@@ -51,15 +55,18 @@ def classExpansion(Y, N, optionsFor):
             classes = np.matlib.repmat([False, True], 1, Y.shape[1])
 
     else:
+        # TODO: Dataframe support
         assert (not optionsFor["bSepPred"]),'Seperate in-out prediction is only valid when Y is a logical array!'
         classes = {}
         Ycell   = {}
-        for n in range(Y.shape[1]):
-            [Ycell{n}, classes{n}, optionsFor] = classExpansion(Y[:, n], N, optionsFor)
-        
-        y_sizes = cellfun(@(x) size(x,2), Ycell);
-        Y = cell2mat(Ycell);
-        optionsFor["task_ids"] = 1+[0,cumsum(y_sizes(1:end-1))]
+        # for n in range(Y.shape[1]):
+        #     [Ycell{n}, classes{n}, optionsFor] = classExpansion(Y[:, n], N, optionsFor)
+        #
+        # y_sizes = cellfun(@(x) size(x,2), Ycell);
+        # Y = cell2mat(Ycell);
+        # optionsFor["task_ids"] = 1+[0,cumsum(y_sizes(1:end-1))]
 
+    if classes.shape[0] > (N-2):
+        assert (True), ('More than n_data_points-2 classes appear to be present.  Make sure no datapoints with missing output or regression option on!')
 
     return Y, classes, optionsFor

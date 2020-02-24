@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+#from prediction_utils.replicate_input_process import replicateInputProcess
 
 def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     """
@@ -23,9 +24,9 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     elif len(bOrdinal) != XTrainRC.shape[1]:
         assert (True), 'bOrdinal must match size of XTrainRC!'
 
-    XTrain = XTrainRC[:,bOrdinal]
+    XTrain = XTrainRC[:, bOrdinal]
 
-    iFeatureNum  = list(range(XTrain.shape[1]))
+    iFeatureNum  = np.arange(XTrain.shape[1])
     featureNames = featureNamesOrig[bOrdinal]
     featureBaseNames = featureNamesOrig[~bOrdinal]
 
@@ -36,14 +37,27 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     XTrain = np.divide(np.subtract(XTrain, mu_XTrain), std_XTrain)
 
     if bNaNtoMean:
-        XTrain[isnan(XTrain)] = 0
+        XTrain[np.isnan(XTrain)] = 0
+
+    # TODO: Expand the categorical features
+    Cats = np.array([])
+    XCat = XTrainRC[:, ~bOrdinal]
+
+    # if iscell(XCat)
+    #     XCat = makeSureString(XCat,10);
 
     # If required, generate function for converting additional data and
     # calculate conversion for any test data provided.
     inputProcessDetails = {}
+    inputProcessDetails["Cats"]       = Cats
     inputProcessDetails['bOrdinal']   = bOrdinal
     inputProcessDetails['mu_XTrain']  = mu_XTrain
     inputProcessDetails['std_XTrain'] = std_XTrain
     inputProcessDetails['bNaNtoMean'] = bNaNtoMean
 
-    return XTrain, iFeatureNum, inputProcessDetails, featureNames
+    if XTestRC == None:
+        return XTrain, iFeatureNum, inputProcessDetails, featureNames
+
+    XTest = replicateInputProcess(Xraw=XTestRC, InputProcessDetails=inputProcessDetails);
+
+    return XTrain, iFeatureNum, inputProcessDetails, XTest, featureNames
