@@ -2,9 +2,13 @@ import numpy as np
 from collections import OrderedDict
 from utils.commonUtils import fastUnique
 from utils.commonUtils import is_numeric
+from utils.ccfUtils import pcaLite
+from utils.ccfUtils import randomRotation
 from utils.ccfUtils import random_missing_vals
-from training_utils.process_inputData import processInputData
+from training_utils.grow_CCT import growCCT
 from training_utils.class_expansion import classExpansion
+from training_utils.process_inputData import processInputData
+from training_utils.rotation_forest_DP import rotationForestDataProcess
 
 import logging
 logger  = logging.getLogger(__name__)
@@ -19,6 +23,48 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
     if optionsFor["missingValuesMethod"] == 'random':
         # Randomly set the missing values.  This will be different for each tree
         XTrain = random_missing_vals(XTrain)
+
+    N = XTrain.shape[0]
+
+    # Bag if required
+    if optionsFor["bBagTrees"] and Ntrain != N:
+        all_samples = np.arange(N)
+        iTrainThis  = np.random.choice(all_samples, Ntrain, replace=optionsFor["bBagTrees"])
+        iOob        = np.setdiff1d(all_samples, iTrainThis).T
+        XTrainOrig  = XTrain
+        XTrain      = XTrain[iTrainThis, :]
+        YTrain      = YTrain[iTrainThis, :]
+
+    # Apply pre rotations if any requested.  Note that these all include a
+    # subtracting a the mean prior to the projection (because this is a natural
+    # part of pca) and this is therefore replicated at test time
+    if optionsFor["treeRotation"] == 'rotationForest':
+        # This allows functionality to use the Rotation Forest algorithm as a
+        # meta method for individual CCTs
+        prop_classes_eliminate = optionsFor["RotForpClassLeaveOut"]
+        if bReg:
+            prop_classes_eliminate = 0
+        R, muX, XTrain = rotationForestDataProcess(XTrain, YTrain, optionsFor.RotForM, optionsFor.RotForpS,prop_classes_eliminate)
+
+    elif optionsFor["treeRotation"] == 'random':
+        muX = np.nanmean(XTrain, axis=0)
+        R   = randomRotation(N=XTrain.shape[1])
+        XTrain = np.subtract(XTrain, muX) @ R
+
+    elif optionsFor["treeRotation"] == 'pca':
+        R, muX, XTrain = pcaLite(XTrain, False, False)
+
+    # Train the tree
+    tree = growCCT(XTrain, YTrain, bReg, optionsFor, iFeatureNum, 0)
+
+    # Calculate out of bag error if relevant
+    if optionsFor["bBagTrees"]:
+        tree["iOutOfBag"] = iOob
+        #tree["predictsOutOfBag"] = predictFromCCT(tree, XTrainOrig[iOob, :])
+
+    # Store rotation deatils if necessary
+    if optionsFor["treeRotation"] != None:
+        tree["rotDetails"] = {'R': R, 'muX': muX}
 
     return tree
 
@@ -205,17 +251,25 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     # Train the trees
     # TODO: Add parallel support
     for nT in range(nTrees):
-        tree = genTree(XTrain,YTrain,bReg,optionsFor,iFeatureNum,Ntrain);
-        if optionsFor.bCalcTimingStats
-            % Avoid some calculations if not doing the timing stats
-            tree_train_times(nT) = toc(tStartTrainThis);
-            n_nodes_trees(nT) = get_number_of_nodes(tree);
-        end
-        if bKeepTrees
-            forest{nT} = tree;
-        end
+        # Generate tree
+        tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
 
-        if nOut>1
-            tStartTestThis = tic;
-            treeOutputTest(:,nT,:) = predictFromCCT(tree,XTest);
-            tree_test_times(nT) = toc(tStartTestThis);
+        if bKeepTrees:
+            forest[nT] = tree
+
+    # Setup outputs
+    CCF = {}
+    CCF["Trees"]   = forest
+    CCF["bReg"]    = bReg
+    CCF["options"] = optionsFor
+    CCF["inputProcessDetails"] = inputProcessDetails
+    CCF["classNames"] = optionsFor["classNames"]
+
+    if optionsFor["bBagTrees"] and bKeepTrees:
+        # Calculate the out of back error if relevant
+        cumOOb = np.zeros(size(YTrain,1),size(CCF.Trees{1}.predictsOutOfBag,2))
+    else:
+        CCF["outOfBagError"] = 'OOB error only returned if bagging used and trees kept. Please use CCF-Bag instead via options=optionsClassCCF.defaultOptionsCCFBag!'
+
+
+    return CCF, forestPredictsTest, forestProbsTest, treeOutputTest
