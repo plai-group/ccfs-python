@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-#from prediction_utils.replicate_input_process import replicateInputProcess
+from prediction_utils.replicate_input_process import replicateInputProcess
 
 def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     """

@@ -26,8 +26,8 @@ def replicateInputProcess(Xraw, InputProcessDetails):
 
     if isinstance(XTrainRC, pd.DataFrame):
         # TODO: Add support for dataframe
-        continue
         # bNumeric = is_numeric(X=X, compress=False)
+        pass
 
     XCat = Xraw[:, ~bOrdinal]
 
