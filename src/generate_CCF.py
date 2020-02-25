@@ -250,46 +250,46 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
 
     # Train the trees
     # TODO: Add parallel support
-    for nT in range(nTrees):
-        # Generate tree
-        tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
+    # for nT in range(nTrees):
+    #     # Generate tree
+    #     tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
+    #
+    #     if bKeepTrees:
+    #         forest[nT] = tree
 
-        if bKeepTrees:
-            forest[nT] = tree
+    # # Setup outputs
+    # CCF = {}
+    # CCF["Trees"]   = forest
+    # CCF["bReg"]    = bReg
+    # CCF["options"] = optionsFor
+    # CCF["inputProcessDetails"] = inputProcessDetails
+    # CCF["classNames"] = optionsFor["classNames"]
+    #
+    # if optionsFor["bBagTrees"] and bKeepTrees:
+    #     # Calculate the out of back error if relevant
+    #     cumOOb = np.zeros((YTrain.shape[0], (CCF["Trees"][1]["predictsOutOfBag"]).shape[1]))
+    #     nOOb   = np.zeros((YTrain.shape[0], 1))
+    #     for nTO in range(CCF["Trees"]):
+    #         cumOOb[CCF["Trees"][nTO]["iOutOfBag"], :] = cumOOb[CCF["Trees"][nTO]["iOutOfBag"], :] + CCF["Trees"]["nTO"]["predictsOutOfBag"]
+    #         nOOb[CCF["Trees"][nTO]["iOutOfBag"] = nOOb[CCF["Trees"][nTO]["iOutOfBag"] + 1
+    #     oobPreds = np.divide(cumOOb, nOOb)
+    #     if bReg:
+    #         CCF["outOfBagError"] = np.nanmean((oobPreds - np.add(np.multiply(YTrain, stdY), muY))**2, axis=0)
+    #     elif optionsFor["bSepPred"]:
+    #         CCF["outOfBagError"] = (1 - np.nanmean((oobPreds > 0.5) == YTrain, axis=0))
+    #     else:
+    #         forPreds = np.empty((XTrain.shape[0], optionsFor["task_ids"].size))
+    #         forPreds.fill(np.nan)
+    #         YTrainCollapsed = np.empty((XTrain.shape[0], optionsFor["task_ids"].size))
+    #         YTrainCollapsed.fill(np.nan)
+    #         for nO in range(optionsFor["task_ids"].size - 1):
+    #             forPreds[:, nO]        = np.argmax(oobPreds[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"][nO+1]-1], axis=1)
+    #             YTrainCollapsed[:, nO] = np.argmax(  YTrain[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"][nO+1]-1], axis=1)
+    #         forPreds[:, -1]        = np.argmax(oobPreds[:, optionsFor["task_ids"][-1]:-1], axis=1)
+    #         YTrainCollapsed[:, -1] = np.argmax(  YTrain[:, optionsFor["task_ids"][-1]:-1], axis=1)
+    #         CCF["outOfBagError"]   = (1 - np.nanmean(forPreds==YTrainCollapsed, axis=0))
+    # else:
+    #     CCF["outOfBagError"] = 'OOB error only returned if bagging used and trees kept.\
+    #                             Please use CCF-Bag instead via options=optionsClassCCF.defaultOptionsCCFBag!'
 
-    # Setup outputs
-    CCF = {}
-    CCF["Trees"]   = forest
-    CCF["bReg"]    = bReg
-    CCF["options"] = optionsFor
-    CCF["inputProcessDetails"] = inputProcessDetails
-    CCF["classNames"] = optionsFor["classNames"]
-
-    if optionsFor["bBagTrees"] and bKeepTrees:
-        # Calculate the out of back error if relevant
-        cumOOb = np.zeros((YTrain.shape[0], (CCF["Trees"][1]["predictsOutOfBag"]).shape[1]))
-        nOOb   = np.zeros((YTrain.shape[0], 1))
-        for nTO in range(CCF["Trees"]):
-            cumOOb[CCF["Trees"][nTO]["iOutOfBag"], :] = cumOOb[CCF["Trees"][nTO]["iOutOfBag"], :] + CCF["Trees"]["nTO"]["predictsOutOfBag"]
-            nOOb[CCF["Trees"][nTO]["iOutOfBag"] = nOOb[CCF["Trees"][nTO]["iOutOfBag"] + 1
-        oobPreds = np.divide(cumOOb, nOOb)
-        if bReg:
-            CCF["outOfBagError"] = np.nanmean((oobPreds - np.add(np.multiply(YTrain, stdY), muY))**2, axis=0)
-        elif optionsFor["bSepPred"]:
-            CCF["outOfBagError"] = (1 - np.nanmean((oobPreds > 0.5) == YTrain, axis=0))
-        else:
-            forPreds = np.empty((XTrain.shape[0], optionsFor["task_ids"].size))
-            forPreds.fill(np.nan)
-            YTrainCollapsed = np.empty((XTrain.shape[0], optionsFor["task_ids"].size))
-            YTrainCollapsed.fill(np.nan)
-            for nO in range(optionsFor["task_ids"].size - 1):
-                forPreds[:, nO]        = np.argmax(oobPreds[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"][nO+1]-1], axis=1)
-                YTrainCollapsed[:, nO] = np.argmax(  YTrain[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"][nO+1]-1], axis=1)
-            forPreds[:, -1]        = np.argmax(oobPreds[:, optionsFor["task_ids"][-1]:-1], axis=1)
-            YTrainCollapsed[:, -1] = np.argmax(  YTrain[:, optionsFor["task_ids"][-1]:-1], axis=1)
-            CCF["outOfBagError"]   = (1 - np.nanmean(forPreds==YTrainCollapsed, axis=0))
-    else:
-        CCF["outOfBagError"] = 'OOB error only returned if bagging used and trees kept.\
-                                Please use CCF-Bag instead via options=optionsClassCCF.defaultOptionsCCFBag!'
-
-    return CCF, forestPredictsTest, forestProbsTest, treeOutputTest
+    return CCF#, forestPredictsTest, forestProbsTest, treeOutputTest

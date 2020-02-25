@@ -24,50 +24,37 @@ def rotationForestDataProcess(X, Y, M, prop_points_subsample, prop_classes_elimi
     fOrder  = np.random.permutation(D)
     fGroups = np.reshape(fOrder[0:int(M * np.floor(D/M))], (M, -1), order='F')
     fLeft   = fOrder[int(M * np.floor(D/M) + 1):]
-    print('m \n', fGroups)
 
     K = fGroups.shape[1]
 
     if prop_classes_eliminate != 0:
         classes = np.unique(Y, axis=0)
-        print(classes)
         nClasses = classes.shape[0]
-        print(nClasses)
 
         n_classes_eliminate = np.floor(prop_classes_eliminate * nClasses).astype(int)
-        print(n_classes_eliminate)
+        classLeaveGroups    = manyRandPerms(nClasses, nClasses-n_classes_eliminate, fGroups.shape[1]).T
+        classLeaveLeft      = np.random.choice(nClasses, nClasses-n_classes_eliminate)
 
-        classLeaveGroups = manyRandPerms(nClasses, nClasses-n_classes_eliminate, fGroups.shape[1]).T
-        print(classLeaveGroups)
-        classLeaveLeft   = np.random.choice(nClasses, nClasses-n_classes_eliminate)
-        print(classLeaveLeft)
-
-        iClasses = []
+        iClasses = {}
         for k in range(nClasses):
-            iClasses.append((((Y[:, k]).ravel().nonzero()[0])[np.newaxis]))
-        iClasses = np.array(iClasses)
-        print(iClasses)
-        print(iClasses.shape)
+            iClasses[k] = (((Y[:, k]).ravel().nonzero()[0])[np.newaxis]).T
+
     else:
+        # This could be a regression case so don't even try and find the classes
         classLeaveGroups = np.ones((1,K))
         classLeaveLeft   = 1
-        iClasses_x       = np.arange(0, X.shape[0])
-        iClasses         = np.array(iClasses_x)
+        iClasses_x       = np.arange(X.shape[0])
+        iClasses         = {}
+        for k in iClasses_x:
+            iClasses[k] = None
 
     R = np.zeros((D,D))
     iUpTo = 0
 
     for n in range(K):
-        cLGidx = list(classLeaveGroups[:, n])
+        cLGidx = classLeaveGroups[:, n]
         iThis  = iClasses[cLGidx]
         r = localRotation(x=X[iThis, fGroups[:, n]], p=prop_points_subsample)
-        print(r)
-        print(r.shape)
-        print(((1 + (n-1)*M)))
-        print((n*M))
-        print((iUpTo))
-        print((iUpTo + r.shape[1] - 1))
-
         R[((1 + (n-1)*M)):(n*M), (iUpTo):(iUpTo + r.shape[1] - 1)] = r
         iUpTo = iUpTo + r.shape[1]
 

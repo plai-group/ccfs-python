@@ -105,7 +105,7 @@ def sVT(X):
     else:
         sX = X.T
 
-        return sX[0]
+        return sX
 
 
 def queryIfColumnsVary(X, tol):
