@@ -121,8 +121,8 @@ def queryIfColumnsVary(X, tol):
     -------
     bVar: Numpy Boolean array
     """
-    bVar = np.max(np.abs(np.diff(X[0:min(5, X.shape[0]), :], axis=0)), axis=0) > tol
-    bVar[~bVar] = np.max(np.abs(np.diff(X[:, ~bVar], axis=0)), axis=0) > tol
+    bVar = np.max(np.absolute(np.diff(X[0:min(5, X.shape[0]), :], axis=0)), axis=0) > tol
+    bVar[~bVar] = np.max(np.absolute(np.diff(X[:, ~bVar], axis=0)), axis=0) > tol
 
     return bVar
 
@@ -141,7 +141,7 @@ def queryIfOnlyTwoUniqueRows(X):
     bVar: Numpy Boolean array
     """
     def my_equal(a, b):
-        return np.equal(b, a, dtype=int)
+        return np.equal(b, a, dtype=int, casting="unsafe")
 
     if X.shape[0] == 2:
         bLessThanTwoUniqueRows = True
@@ -259,3 +259,39 @@ def makeSureString(A, nSigFigTol, access_all = False):
                 A = num2str(A)
 
     return A
+
+
+def dict2array(X):
+    """
+    Returns a numpy array from dictionary
+
+    Parameters
+    ----------
+    X: dict
+    """
+    all_var = []
+
+    for k in X.keys():
+        all_var.append(X[k])
+
+    return np.array(all_var)
+
+
+def amerge(a, b, p):
+    """
+    Advanced concatenate for numpy similar to MATLAB
+    """
+    a1, a2 = a.shape
+    b1, b2 = b.shape
+    p1, p2 = p.shape
+
+    if p2 > a1:
+        arr = np.zeros((p2, b2))
+        for k in p[0]:
+            arr[k, :] = b[k]
+
+        return arr
+    else:
+        a[p, :] = b
+
+        return a

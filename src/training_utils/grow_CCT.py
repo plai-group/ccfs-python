@@ -8,8 +8,8 @@ from utils.commonUtils import queryIfOnlyTwoUniqueRows
 from utils.ccfUtils import regCCA_alt
 from utils.ccfUtils import random_feature_expansion
 from utils.ccfUtils import genFeatureExpansionParameters
-from component_analysis import componentAnalysis
-from twopoint_max_marginsplit import twoPointMaxMarginSplit
+from training_utils.component_analysis import componentAnalysis
+from training_utils.twopoint_max_marginsplit import twoPointMaxMarginSplit
 
 import logging
 logger  = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     elif (not bReg):
         # Check class variation
         sumY = np.sum(YTrain, axis=0)
-        bYVaries = (sumY != 0) and (sumY != N)
+        bYVaries = np.all(sumY != 0) and np.all(sumY != N)
         if not (np.any(bYVaries)):
             tree = setupLeaf(YTrain,bReg,options);
             return tree
@@ -120,7 +120,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     #---------------------------------------------------------------------------
     iCanBeSelected = fastUnique(X=iFeatureNum)
     iCanBeSelected[np.isnan(iCanBeSelected)] = []
-    lambda_   = np.min(iCanBeSelected.size, options["lambda"])
+    lambda_   = np.min((iCanBeSelected.size, options["lambda"]))
     indFeatIn = np.random.choice(iCanBeSelected.size, lambda_, replace=False)
     iFeatIn   = iCanBeSelected[indFeatIn]
 
@@ -129,106 +129,110 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     iIn = (np.any(bInMat, axis=0)).ravel().nonzero()[0]
     print('In')
     print(iIn)
-    print('-----')
+    # tree={}
+    # return tree
+    # Check for variation along selected dimensions and
+    # resample features that have no variation
+    bXVaries = queryIfColumnsVary(X=XTrain[:, iIn], tol=options["XVariationTol"])
+
+    if (not np.all(bXVaries)):
+        iInNew    = iIn
+        nSelected = 0
+        iIn       = iIn[bXVaries]
+
+        while (not np.all(bXVaries)) and lambda_ > 0:
+            iFeatureNum[iInNew[~bXVaries]] = np.nan
+            bInMat[:, iInNew[~bXVaries]] = False
+            bRemainsSelected = np.any(bInMat, aixs=1)
+            nSelected = nSelected + bRemainsSelected.sum(axis=0)
+            iCanBeSelected[indFeatIn] = []
+            lambda_   = np.min((iCanBeSelected.size, options["lambda"]-nSelected))
+            if lambda_ < 1:
+                break
+            indFeatIn = np.random.choice(iCanBeSelected.size, size=lambda_, replace=False)
+            iFeatIn   = iCanBeSelected[indFeatIn]
+            bInMat    = np.equal(iFeatureNum.flatten(order='F'), iFeatIn.flatten(order='F'))
+            iInNew    = (np.any(bInMat, axis=0)).ravel().nonzero()[0]
+            bXVaries  = queryIfColumnsVary(X=XTrain[:, iInNew], tol=options["XVariationTol"])
+            iIn       = np.sort(np.concatenate((iIn, iInNew[bXVaries])))
+
+    if iIn.size == 0:
+        # This means that there was no variation along any feature, therefore exit.
+        tree = setupLeaf(YTrain, bReg, options)
+        return tree
+
+    #---------------------------------------------------------------------------
+    # Projection bootstrap if required
+    #---------------------------------------------------------------------------
+    if options["bProjBoot"]:
+        iTrainThis = np.random.randint(N, size=(N,1))
+        XTrainBag  = XTrain[iTrainThis, iIn]
+        YTrainBag  = YTrain[iTrainThis, :]
+    else:
+        XTrainBag = XTrain[:, iIn]
+        YTrainBag = YTrain
+
+    bXBagVaries = queryIfColumnsVary(X=XTrainBag, tol=options["XVariationTol"])
+
+    if (not np.any(bXBagVaries)) or\
+        (not bReg and YTrainBag.shape[1] > 1  and (np.sum(np.absolute(np.sum(YTrainBag, axis=0)) > 1e-12) < 2)) or\
+        (not bReg and YTrainBag.shape[1] == 1 and (np.any(np.sum(YTrainBag, axis=0) == np.array([0, YTrainBag.shape[0]])))) or\
+        (bReg and np.all(var(YTrainBag) < (options["mseTotal"] * options["mseErrorTolerance"]))):
+        if (not options["bContinueProjBootDegenerate"]):
+            tree = setupLeaf(YTrain, bReg, options)
+            return tree
+        else:
+            XTrainBag = XTrain[:, iIn]
+            YTrainBag = YTrain
+
+    #---------------------------------------------------------------------------
+    # Check for only having two points
+    #---------------------------------------------------------------------------
+    if (not (len(options["projections"]) == 0)) and ((XTrainBag.shape[0] == 1) or queryIfOnlyTwoUniqueRows(X=XTrainBag)):
+        bSplit, projMat, partitionPoint = twoPointMaxMarginSplit(XTrainBag, YTrainBag, options["XVariationTol"])
+        if (not bSplit):
+            tree = setupLeaf(YTrain, bReg, options)
+            return tree
+
+        else:
+            bLessThanTrain = (XTrain[:, iIn] @ projMat) <= partitionPoint
+            iDir = 1
+    else:
+        # Generate the new features as required
+        if options["bRCCA"]:
+            wZ, bZ  = genFeatureExpansionParameters(XTrainBag, options["rccaNFeatures"], options["rccaLengthScale"])
+            fExp    = makeExpansionFunc(wZ, bZ, options["rccaIncludeOriginal"])
+            projMat, _, _ = regCCA_alt(XTrainBag, YTrainBag, options["rccaRegLambda"], options["rccaRegLambda"], 1e-8)
+            if projMat.size == 0:
+                projMat = np.ones((XTrainBag.shape[1], 1))
+            UTrain = fExp(XTrain[:, iIn]) @ projMat
+
+        else:
+            print(XTrainBag.shape)
+            print(YTrainBag.shape)
+            projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
+            UTrain = XTrain[:, iIn] @ projMat
+
+        #-----------------------------------------------------------------------
+        # Choose the features to use
+        #-----------------------------------------------------------------------
+        # This step catches splits based on no significant variation
+        bUTrainVaries = queryIfColumnsVary(UTrain, options["XVariationTol"])
+
+        if (not np.any(bUTrainVaries)):
+            tree = setupLeaf(YTrain, bReg, options)
+            return tree
+
+        UTrain  = UTrain[:, bUTrainVaries]
+        projMat = projMat[:, bUTrainVaries]
+
+        if options["bUseOutputComponentsMSE"] and bReg and (YTrain.shape[1] > 1) and\
+           (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
+           VTrain = YTrain @ yprojMat
+
     tree={}
     return tree
-    # # Check for variation along selected dimensions and
-    # # resample features that have no variation
-    # bXVaries = queryIfColumnsVary(X=XTrain[:, iIn], tol=options["XVariationTol"])
-    #
-    # if not np.all(bXVaries):
-    #     iInNew    = iIn
-    #     nSelected = 0
-    #     iIn       = iIn[bXVaries]
-    #
-    #     while (not np.all(bXVaries)) and lambda_ > 0:
-    #         iFeatureNum[iInNew[~bXVaries]] = np.nan
-    #         bInMat[:, iInNew[~bXVaries]] = False
-    #         bRemainsSelected = np.any(bInMat, aixs=1)
-    #         nSelected = nSelected + bRemainsSelected.sum(axis=0)
-    #         iCanBeSelected[indFeatIn] = []
-    #         lambda_   = min(iCanBeSelected.size, options["lambda"]-nSelected)
-    #         if lambda_ < 1:
-    #             break
-    #         indFeatIn = np.random.randint(low=0, high=iCanBeSelected.size, size=lambda_)
-    #         iFeatIn   = iCanBeSelected[indFeatIn]
-    #         bInMat    = np.equal(sVT(X=iFeatureNum.flatten()), np.sort(iFeatIn.flatten()))
-    #         iInNew    = (np.any(bInMat, axis=0)).ravel().nonzero()[0][0]
-    #         bXVaries  = queryIfColumnsVary(X=XTrain[:, iInNew], tol=options["XVariationTol"])
-    #         iInNew    = np.sort(np.concatenate(iIn, iInNew[bXVaries]))
-    #
-    # if iIn.size == 0:
-    #     # This means that there was no variation along any feature, therefore exit.
-    #     tree = setupLeaf(YTrain, bReg, options)
-    #     return tree
-    #
-    # #---------------------------------------------------------------------------
-    # # Projection bootstrap if required
-    # #---------------------------------------------------------------------------
-    # if options["bProjBoot"]:
-    #     iTrainThis = np.random.randint(N, size=(N,1))
-    #     XTrainBag  = XTrain[iTrainThis, iIn]
-    #     YTrainBag  = YTrain[iTrainThis, :]
-    # else:
-    #     XTrainBag = XTrain[:, iIn]
-    #     YTrainBag = YTrain
-    #
-    # bXBagVaries = queryIfColumnsVary(X=XTrainBag, tol=options["XVariationTol"])
-    #
-    # if not np.any(bXBagVaries) or\
-    #     (not bReg and YTrainBag.shape[1] > 1  and (np.sum(np.absolute(np.sum(YTrainBag, axis=0)) > 1e-12) < 2)) or\
-    #     (not bReg and YTrainBag.shape[1] == 1 and np.any(np.sum(YTrainBag, axis=0) == [0, YTrainBag.shape[0]])) or\
-    #     (bReg and np.all(var(YTrainBag) < (options["mseTotal"] * options["mseErrorTolerance"]))):
-    #     if not options["bContinueProjBootDegenerate"]:
-    #         tree = setupLeaf(YTrain, bReg, options)
-    #         return tree
-    #     else:
-    #         XTrainBag = XTrain[:, iIn]
-    #         YTrainBag = YTrain
-    #
-    # #---------------------------------------------------------------------------
-    # # Check for only having two points
-    # #---------------------------------------------------------------------------
-    # if (not (options["projection"].size == 0)) and ((XTrainBag.shape[0] == 1) or queryIfOnlyTwoUniqueRows(X=XTrainBag)):
-    #     bSplit, projMat, partitionPoint = twoPointMaxMarginSplit(XTrainBag, YTrainBag, options["XVariationTol"])
-    #     if not bSplit:
-    #         tree = setupLeaf(YTrain, bReg, options)
-    #         return tree
-    #
-    #     else:
-    #         bLessThanTrain = (XTrain[:, iIn] * projMat) <= partitionPoint
-    #         iDir = 1
-    # else:
-    #     # Generate the new features as required
-    #     if options["bRCCA"]:
-    #         wZ, bZ  = genFeatureExpansionParameters(XTrainBag, options["rccaNFeatures"], options["rccaLengthScale"])
-    #         fExp    = makeExpansionFunc(wZ, bZ, options["rccaIncludeOriginal"])
-    #         projMat, _, _ = regCCA_alt(XTrainBag, YTrainBag, options["rccaRegLambda"], options["rccaRegLambda"], 1e-8)
-    #         if projMat.size == 0:
-    #             projMat = np.ones((XTrainBag.shape[1], 1))
-    #         UTrain = fExp(XTrain[:, iIn]) @ projMat
-    #
-    #     else:
-    #         projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
-    #         UTrain = XTrain[:, iIn] @ projMat
-    #
-    #     #-----------------------------------------------------------------------
-    #     # Choose the features to use
-    #     #-----------------------------------------------------------------------
-    #
-    #     # This step catches splits based on no significant variation
-    #     bUTrainVaries = queryIfColumnsVary(UTrain, options["XVariationTol"])
-    #
-    #     if not np.any(bUTrainVaries):
-    #         tree = setupLeaf(YTrain,bReg,options);
-    #
-    #     UTrain  = UTrain[:, bUTrainVaries]
-    #     projMat = projMat[:, bUTrainVaries]
-    #
-    #     if options["bUseOutputComponentsMSE"] and bReg and (YTrain.shape[1] > 1) and\
-    #        (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
-    #        VTrain = YTrain @ yprojMat
-    #
+
     #     #-----------------------------------------------------------------------
     #     # Search over splits using provided method
     #     #-----------------------------------------------------------------------

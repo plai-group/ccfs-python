@@ -232,10 +232,10 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
 
     if XTest == None:
         XTest = np.empty((0, XTrain.shape[0]))
-        Xtest.fill(np.nan)
+        XTest.fill(np.nan)
 
     forest = OrderedDict()
-    treeOutputTest = np.empty((XTest.shape[0], nTrees,size(YTrain,2)))
+    treeOutputTest = np.empty((XTest.shape[0], nTrees, YTrain.shape[1]))
     treeOutputTest.fill(np.nan)
 
 
@@ -250,12 +250,12 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
 
     # Train the trees
     # TODO: Add parallel support
-    # for nT in range(nTrees):
-    #     # Generate tree
-    #     tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
-    #
-    #     if bKeepTrees:
-    #         forest[nT] = tree
+    for nT in range(2):
+        # Generate tree
+        tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
+
+        if bKeepTrees:
+            forest[nT] = tree
 
     # # Setup outputs
     # CCF = {}
