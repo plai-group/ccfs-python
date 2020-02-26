@@ -23,8 +23,6 @@ def componentAnalysis(X, Y, processes, epsilon):
     projections are CCA, PCA, CCA-classwise, Original axes and Random Rotation.
     """
     probs = dict2array(X=processes) * 1
-    print(probs)
-
     # Sample projections to use if some set to be probabilistically used
     bToSample = np.logical_and((probs > 0), (probs < 1))
     if np.any(bToSample):
@@ -43,12 +41,7 @@ def componentAnalysis(X, Y, processes, epsilon):
     bYvaries = queryIfColumnsVary(X=Y, tol=1e-12)
     nXorg = bXVaries.size
     nYorg = bYvaries.size
-    print('444444444')
-    print(bXVaries)
-    print(nXorg)
-    print(bYvaries)
-    print(nYorg)
-    print('555555555')
+
     if ~(np.any(bXVaries)) or ~(np.any(bYvaries)):
         # One of X or Y doesn't vary so component analysis fails.
         # Return projection corresponding to first columns of X and Y
@@ -100,7 +93,6 @@ def componentAnalysis(X, Y, processes, epsilon):
         # CCA based projections
         q1, r1, p1 = la.qr(X, pivoting=True, mode='economic')
         p1 = sVT(p1).T
-        print('r1', q1.shape, r1.shape, p1.shape)
         # Reduce to full rank within some tolerance
         if r1.size == 0:
             rankX = 0
@@ -123,7 +115,6 @@ def componentAnalysis(X, Y, processes, epsilon):
         if processes['CCA']:
             q2, r2, p2 = la.qr(Y, pivoting=True, mode='economic')
             p2 = sVT(p2).T
-            print('dsds', q2.shape, r2.shape, p2.shape)
             # Reduce to full rank within some tolerance
             if r2.size == 0:
                 rankY = 0
@@ -145,11 +136,9 @@ def componentAnalysis(X, Y, processes, epsilon):
             # Solve CCA using the decompositions, taking care to use minimal
             # complexity orientation for SVD.  Note the two calculations are
             # equivalent except in computational complexity
-            print('rank', rankX, rankY)
             d = np.min((rankX, rankY))
 
             if rankX >= rankY:
-                print('engage')
                 L, D, Mh = np.linalg.svd(q1.T @ q2)
                 M = Mh.T
                 D = np.diag(D)
@@ -164,17 +153,8 @@ def componentAnalysis(X, Y, processes, epsilon):
                 locProj, _, _, _ = np.linalg.lstsq(r1, L[:, 0:d] * np.sqrt(x1 - 1), rcond=-1)
 
             # Put coefficients back to their full size and their correct order
-            # print('loc_proj', locProj.shape)
-            # print('r1.shape,', r1.shape)
-            # print('L', (np.sqrt(x1 - 1) * L[:, 0:d]).shape)
-            # print('O', (np.zeros((x2-rankX, d))).shape)
-            #
             locProj = amerge(a=locProj, b=np.concatenate((locProj, np.zeros((x2-rankX, d)))), p=p1)
-            print(projMat.shape)
-            print(locProj.shape)
             projMat = np.concatenate((projMat, locProj), axis=1) # Maybe fix with axis
-            print(projMat.shape)
-            print('----------')
 
             r2 = r2[0:rankY, 0:rankY]
             if isSquare(r2):
@@ -182,11 +162,8 @@ def componentAnalysis(X, Y, processes, epsilon):
             else:
                 locyProj, _, _, _  = np.linalg.lstsq(r2, M[:, 0:d] * np.sqrt(x1-1))
             locyProj = amerge(a=locyProj, b=np.concatenate((locyProj, np.zeros((K-rankY, d)))), p=p2)
-            print(locyProj.shape)
             yprojMat = np.concatenate((yprojMat, locyProj), axis=1)
 
-            print(D.shape)
-            print('******************')
             r = np.minimum(np.maximum(np.diag(D[:, 0:d]), 0), 1)
 
         if processes['CCAclasswise']:

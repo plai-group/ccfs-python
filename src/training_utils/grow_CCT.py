@@ -127,8 +127,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     bInMat = np.equal(sVT(X=iFeatureNum.flatten()), np.sort(iFeatIn.flatten()))
 
     iIn = (np.any(bInMat, axis=0)).ravel().nonzero()[0]
-    print('In')
-    print(iIn)
+
     # tree={}
     # return tree
     # Check for variation along selected dimensions and
@@ -208,8 +207,6 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             UTrain = fExp(XTrain[:, iIn]) @ projMat
 
         else:
-            print(XTrainBag.shape)
-            print(YTrainBag.shape)
             projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
             UTrain = XTrain[:, iIn] @ projMat
 
@@ -230,200 +227,197 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
            (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
            VTrain = YTrain @ yprojMat
 
-    tree={}
-    return tree
+        #-----------------------------------------------------------------------
+        # Search over splits using provided method
+        #-----------------------------------------------------------------------
+        nProjDirs  = UTrain.shape[1]
+        splitGains = np.empty((nProjDirs,1))
+        splitGains.fill(np.nan)
+        iSplits    = np.empty((nProjDirs,1))
+        iSplits.fill(np.nan)
 
-    #     #-----------------------------------------------------------------------
-    #     # Search over splits using provided method
-    #     #-----------------------------------------------------------------------
-    #     nProjDirs = UTrain.shape[1]
-    #     splitGains = np.empty((nProjDirs,1))
-    #     splitGains.fill(np.nan)
-    #     iSplits = np.empty((nProjDirs,1))
-    #     iSplits.fill(np.nan)
-    #
-    #     for nVarAtt in range(nProjDirs):
-    #         # Calculate the probabilities of being at each class in each of child
-    #         # nodes based on proportion of training data for each of possible
-    #         # splits using current projection
-    #         UTrainSort    = np.sort(UTrain[:, nVarAtt])
-    #         iUTrainSort   = np.argsort(UTrain[:, nVarAtt])
-    #         bUniquePoints = np.concatenate((np.diff(UTrainSort, n=1, axis=0) > options["XVariationTol"], False))
-    #
-    #         if options["bUseOutputComponentsMSE"] and bReg and YTrain.shape[1] > 1 and (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
-    #             VTrainSort = VTrain[iUTrainSort, :]
-    #         else:
-    #             VTrainSort = YTrain[iUTrainSort, :]
-    #
-    #         leftCum = np.cumsum(VTrainSort, axis=0)
-    #         if YTrain.shape[1] ==1 or options["bSepPred"] and (not bReg):
-    #             # Convert to [class_doesnt_exist,class_exists]
-    #             leftCum = np.concatenate((np.subtract(sVT(X=np.arange(0,N)), leftCum), leftCum))
-    #
-    #         rightCum = np.concatenate((np.subtract(leftCum[-1, :], leftCum)))
-    #
-    #         # Calculate the metric values of the current node and two child nodes
-    #         if not bReg:
-    #             pL = np.divide(leftCum,  sVT(X=np.arange(0,N)))
-    #             pR = np.divide(rightCum, sVT(X=np.arange(N-1, -1, -1)))
-    #
-    #             split_criterion = options["splitCriterion"]
-    #             if split_criterion == 'gini':
-    #                 # Can ignore the 1 as this cancels in the gain
-    #                 lTerm = -pL**2
-    #                 rTerm = -pR**2
-    #             elif split_criterion =='info':
-    #                 lTerm = np.multiply(-pL, np.log2(pL))
-    #                 lTerm[pL == 0] = 0
-    #                 rTerm = np.multiply(-pR, np.log2(pL))
-    #                 rTerm[pR == 0] = 0
-    #             else:
-    #                 assert (True), 'Invalid split criterion!'
-    #
-    #             if (YTrain.shape[1] == 1) or options["bSepPred"]:
-    #                 # Add grouped terms back together
-    #                 end   = YTrain.shape[1]
-    #                 lTerm = lTerm[:, 0:end//2] + lTerm[:, end//2:end]
-    #                 rTerm = rTerm[:, 0:end//2] + rTerm[:, end//2:end]
-    #
-    #             if (not is_numeric(options["taskWeights"])) and (not options["multiTaskGainCombination"] == 'max'):
-    #                 # No need to do anything fancy in the metric calculation
-    #                 metricLeft  = np.sum(lTerm, axis=1)
-    #                 metricRight = np.sum(rTerm, axis=1)
-    #             else:
-    #                 # Need to do grouped sums for each of the outputs as will be
-    #                 # doing more than a simple averaging of there values
-    #                metricLeft = np.cumsum(lTerm, axis=1)
-    #                taskidxs_L = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
-    #                metricLeft = metricLeft[:, taskidxs_L] - np.concatenate((np.zeros((metricLeft.shape[0], 1)), metricLeft[:, (options["task_ids"][1:] - 1)]))
-    #
-    #                metricRight = np.cumsum(rTerm, axis=1)
-    #                taskidxs_R  = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
-    #                metricRight = metricRight[:, taskidxs_R] - np.concatenate((np.zeros((metricRight.shape[0], 1)), metricRight[:, (options["task_ids"][1:] - 1)]))
-    #         else:
-    #             if options["splitCriterion"] == 'mse':
-    #                 cumSqLeft = np.cumsum(VTrainSort**2)
-    #                 varData   = np.subtract((cumSqLeft[-1,:]/N), ((leftCum[end, :]/N)**2))
-    #                 if np.all(varData < (options["mseTotal"] * options["mseErrorTolerance"])):
-    #                     # Total variation is less then the allowed tolerance so
-    #                     # terminate and construct a leaf
-    #                     tree = setupLeaf(YTrain, bReg, options);
-    #                     return tree
-    #
-    #                 cumtotal_l = np.concatenate((np.zeros((1, VTrainSort.shape[1])), leftCum))
-    #                 metricLeft = calc_mse(cumtotal=cumtotal_l, cumsq=cumSqLeft, YTrainSort=VTrainSort)
-    #                 # For calculating the right need to go in additive order again
-    #                 # so go from other end and then flip
-    #                 metricRight = np.concatenate((np.zeros((1, VTrainSort.shape[1])), calc_mse(rightCum[-1::-1, :], np.subtract(cumSqLeft[-1, :], cumSqLeft[-2::-1, :]), VTrainSort[-1:0:-1, :])))
-    #                 metricRight = metricRight[-1:0:-1, :]
-    #                 # No need to do the grouping for regression as each must be
-    #                 # a seperate output anyway.
-    #
-    #             else:
-    #                 assert (True), 'Invalid split criterion!'
-    #
-    #         metricCurrent = metricLeft[end,:]
-    #         metricLeft[~bUniquePoints, :] = np.inf
-    #         metricRight[~bUniquePoints,:] = np.inf
-    #
-    #         # Calculate gain in metric for each of possible splits based on current
-    #         # metric value minus metric value of child weighted by number of terms
-    #         # in each child
-    #         metricGain = np.subtract(metricCurrent, (np.multiply(sVT(X=np.arange(N)), metricLeft) + np.multiply(sVT(X=np.arange(N-1, 0, -1)), metricRight))/N)
-    #
-    #         # Combine gains if there are mulitple outputs.  Note that for gini,
-    #         # info and mse, the joint gain is equal to the mean gain, hence
-    #         # taking the mean here rather than explicitly calculating joints before.
-    #         if metricGain.shape[1] > 1:
-    #             if is_numeric(options["taskWeights"]):
-    #                 # If weights provided, weight task appropriately in terms of importance.
-    #                 metricGain = np.multiply(metricGain, sVT(X=options["taskWeights"].flatten()))
-    #
-    #             multiTGC = options["multiTaskGainCombination"]
-    #             if multiTGC == 'mean':
-    #                 metricGain = np.mean(metricGain, axis=1)
-    #             elif multiTGC == 'max':
-    #                 metricGain = np.max(metricGain, axis=1)
-    #             else:
-    #                 assert (True), 'Invalid option for options.multiTaskGainCombination'
-    #
-    #             # Disallow splits that violate the minimum number of leaf points
-    #             end = metricGain.shape[0]
-    #             metricGain[0:(options["minPointsLeaf"]-1)] = -np.inf;
-    #             metricGain[(end-(options["minPointsLeaf"]-1)):] = -np.inf; # Note that end is never chosen anyway
-    #
-    #             # Randomly sample from equally best splits
-    #             iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])
-    #             splitGains[nVarAtt] = np.max(metricGain[0:-1])
-    #             iEqualMax = (np.absolute(metricGain[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero()
-    #             if iEqualMax.size == 0:
-    #                 iEqualMax = 1
-    #             iSplits[nVarAtt] = iEqualMax[np.random.randint(iEqualMax.size)]
-    #
-    #     # If no split gives a positive gain then stop
-    #     if np.max(splitGains) < 0:
-    #         tree = setupLeaf(YTrain, bReg, options)
-    #         return tree
-    #
-    #     # Establish between projection direction
-    #     maxGain   = np.max(splitGains)
-    #     iEqualMax = (np.absolute(splitGains - maxGain) < (10 * eps)).ravel().nonzero()
-    #     # Use given method to break ties
-    #     if options["dirIfEqual"] == 'rand':
-    #         iDir = iEqualMax[np.random.randint(iEqualMax.size)]
-    #     elif options["dirIfEqual"] == 'first':
-    #         iDir = iEqualMax[0]
-    #     else:
-    #         assert (True), 'invalid dirIfEqual!'
-    #     iSplit = iSplits[iDir]
-    #
-    #     #-----------------------------------------------------------------------
-    #     # Establish partition point and assign to child
-    #     #-----------------------------------------------------------------------
-    #     UTrain = UTrain[:, iDir]
-    #     UTrainSort = np.sort(UTrain)
-    #
-    #     # The convoluted nature of the below is to avoid numerical errors
-    #     uTrainSortLeftPart = UTrainSort[iSplit]
-    #     UTrainSort     = UTrainSort - uTrainSortLeftPart
-    #     partitionPoint = UTrainSort[iSplit]*0.5 + UTrainSort[iSplit+1]*0.5
-    #     partitionPoint = partitionPoint + uTrainSortLeftPart
-    #     UTrainSort     = UTrainSort + uTrainSortLeftPart
-    #
-    #     bLessThanTrain = (UTrain <= partitionPoint)
-    #
-    #     if (not np.any(bLessThanTrain)) or np.all(bLessThanTrain):
-    #         assert (True), 'Suggested split with empty!'
-    #
-    #     #-----------------------------------------------------------------------
-    #     # Recur tree growth to child nodes and constructs tree struct
-    #     #-----------------------------------------------------------------------
-    #     tree = {}
-    #     tree["bLeaf"]   = False
-    #     tree["Npoints"] = N
-    #     tree["mean"]    = np.mean(YTrain, axis=0)
-    #
-    #     if bReg:
-    #         if (not options["org_stdY"].size == 0):
-    #             tree["mean"] = tree["mean"] * options["org_stdY"]
-    #
-    #         if (not options["org_muY"].size == 0):
-    #             tree["mean"] = tree["mean"] + options["org_muY"]
-    #
-    #     treeLeft  = growCCT(XTrain[bLessThanTrain, :], YTrain[bLessThanTrain,  :], bReg, options, iFeatureNum, depth+1)
-    #     treeRight = growCCT(XTrain[~bLessThanTrain,:], YTrain[~bLessThanTrain, :], bReg, options, iFeatureNum, depth+1)
-    #     tree["iIn"] = iIn
-    #
-    #     if options["bRCCA"]:
-    #         try:
-    #             if inspect.isfunction(fExp):
-    #                 tree["featureExpansion"] = fExp # Ensure variable is defined
-    #         except NameError:
-    #             pass
-    #
-    #     tree["decisionProjection"] = projMat[:, iDir]
-    #     tree["paritionPoint"]      = partitionPoint
-    #     tree["lessthanChild"]      = treeLeft
-    #     tree["greaterthanChild"]   = treeRight
+        for nVarAtt in range(nProjDirs):
+            # Calculate the probabilities of being at each class in each of child
+            # nodes based on proportion of training data for each of possible
+            # splits using current projection
+            UTrainSort    = np.sort(UTrain[:, nVarAtt])
+            iUTrainSort   = np.argsort(UTrain[:, nVarAtt])
+            bUniquePoints = np.concatenate((np.diff(UTrainSort, n=1, axis=0) > options["XVariationTol"], False))
 
-    #    return tree
+            if options["bUseOutputComponentsMSE"] and bReg and YTrain.shape[1] > 1 and (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
+                VTrainSort = VTrain[iUTrainSort, :]
+            else:
+                VTrainSort = YTrain[iUTrainSort, :]
+
+            leftCum = np.cumsum(VTrainSort, axis=0)
+            if YTrain.shape[1] ==1 or options["bSepPred"] and (not bReg):
+                # Convert to [class_doesnt_exist,class_exists]
+                leftCum = np.concatenate((np.subtract(sVT(X=np.arange(0,N)), leftCum), leftCum))
+
+            rightCum = np.concatenate((np.subtract(leftCum[-1, :], leftCum)))
+
+            # Calculate the metric values of the current node and two child nodes
+            if not bReg:
+                pL = np.divide(leftCum,  sVT(X=np.arange(0,N)))
+                pR = np.divide(rightCum, sVT(X=np.arange(N-1, -1, -1)))
+
+                split_criterion = options["splitCriterion"]
+                if split_criterion == 'gini':
+                    # Can ignore the 1 as this cancels in the gain
+                    lTerm = -pL**2
+                    rTerm = -pR**2
+                elif split_criterion =='info':
+                    lTerm = np.multiply(-pL, np.log2(pL))
+                    lTerm[pL == 0] = 0
+                    rTerm = np.multiply(-pR, np.log2(pL))
+                    rTerm[pR == 0] = 0
+                else:
+                    assert (True), 'Invalid split criterion!'
+
+                if (YTrain.shape[1] == 1) or options["bSepPred"]:
+                    # Add grouped terms back together
+                    end   = YTrain.shape[1]
+                    lTerm = lTerm[:, 0:end//2] + lTerm[:, end//2:end]
+                    rTerm = rTerm[:, 0:end//2] + rTerm[:, end//2:end]
+
+                if (not is_numeric(options["taskWeights"])) and (not options["multiTaskGainCombination"] == 'max'):
+                    # No need to do anything fancy in the metric calculation
+                    metricLeft  = np.sum(lTerm, axis=1)
+                    metricRight = np.sum(rTerm, axis=1)
+                else:
+                    # Need to do grouped sums for each of the outputs as will be
+                    # doing more than a simple averaging of there values
+                   metricLeft = np.cumsum(lTerm, axis=1)
+                   taskidxs_L = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
+                   metricLeft = metricLeft[:, taskidxs_L] - np.concatenate((np.zeros((metricLeft.shape[0], 1)), metricLeft[:, (options["task_ids"][1:] - 1)]))
+
+                   metricRight = np.cumsum(rTerm, axis=1)
+                   taskidxs_R  = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
+                   metricRight = metricRight[:, taskidxs_R] - np.concatenate((np.zeros((metricRight.shape[0], 1)), metricRight[:, (options["task_ids"][1:] - 1)]))
+            else:
+                if options["splitCriterion"] == 'mse':
+                    cumSqLeft = np.cumsum(VTrainSort**2)
+                    varData   = np.subtract((cumSqLeft[-1,:]/N), ((leftCum[end, :]/N)**2))
+                    if np.all(varData < (options["mseTotal"] * options["mseErrorTolerance"])):
+                        # Total variation is less then the allowed tolerance so
+                        # terminate and construct a leaf
+                        tree = setupLeaf(YTrain, bReg, options);
+                        return tree
+
+                    cumtotal_l = np.concatenate((np.zeros((1, VTrainSort.shape[1])), leftCum))
+                    metricLeft = calc_mse(cumtotal=cumtotal_l, cumsq=cumSqLeft, YTrainSort=VTrainSort)
+                    # For calculating the right need to go in additive order again
+                    # so go from other end and then flip
+                    metricRight = np.concatenate((np.zeros((1, VTrainSort.shape[1])), calc_mse(rightCum[-1::-1, :], np.subtract(cumSqLeft[-1, :], cumSqLeft[-2::-1, :]), VTrainSort[-1:0:-1, :])))
+                    metricRight = metricRight[-1:0:-1, :]
+                    # No need to do the grouping for regression as each must be
+                    # a seperate output anyway.
+
+                else:
+                    assert (True), 'Invalid split criterion!'
+
+            metricCurrent = metricLeft[end,:]
+            metricLeft[~bUniquePoints, :] = np.inf
+            metricRight[~bUniquePoints,:] = np.inf
+
+            # Calculate gain in metric for each of possible splits based on current
+            # metric value minus metric value of child weighted by number of terms
+            # in each child
+            metricGain = np.subtract(metricCurrent, (np.multiply(sVT(X=np.arange(N)), metricLeft) + np.multiply(sVT(X=np.arange(N-1, 0, -1)), metricRight))/N)
+
+            # Combine gains if there are mulitple outputs.  Note that for gini,
+            # info and mse, the joint gain is equal to the mean gain, hence
+            # taking the mean here rather than explicitly calculating joints before.
+            if metricGain.shape[1] > 1:
+                if is_numeric(options["taskWeights"]):
+                    # If weights provided, weight task appropriately in terms of importance.
+                    metricGain = np.multiply(metricGain, sVT(X=options["taskWeights"].flatten()))
+
+                multiTGC = options["multiTaskGainCombination"]
+                if multiTGC == 'mean':
+                    metricGain = np.mean(metricGain, axis=1)
+                elif multiTGC == 'max':
+                    metricGain = np.max(metricGain, axis=1)
+                else:
+                    assert (True), 'Invalid option for options.multiTaskGainCombination'
+
+                # Disallow splits that violate the minimum number of leaf points
+                end = metricGain.shape[0]
+                metricGain[0:(options["minPointsLeaf"]-1)] = -np.inf;
+                metricGain[(end-(options["minPointsLeaf"]-1)):] = -np.inf; # Note that end is never chosen anyway
+
+                # Randomly sample from equally best splits
+                iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])
+                splitGains[nVarAtt] = np.max(metricGain[0:-1])
+                iEqualMax = (np.absolute(metricGain[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero()
+                if iEqualMax.size == 0:
+                    iEqualMax = 1
+                iSplits[nVarAtt] = iEqualMax[np.random.randint(iEqualMax.size)]
+
+        # If no split gives a positive gain then stop
+        if np.max(splitGains) < 0:
+            tree = setupLeaf(YTrain, bReg, options)
+            return tree
+
+        # Establish between projection direction
+        maxGain   = np.max(splitGains)
+        iEqualMax = (np.absolute(splitGains - maxGain) < (10 * eps)).ravel().nonzero()
+        # Use given method to break ties
+        if options["dirIfEqual"] == 'rand':
+            iDir = iEqualMax[np.random.randint(iEqualMax.size)]
+        elif options["dirIfEqual"] == 'first':
+            iDir = iEqualMax[0]
+        else:
+            assert (True), 'invalid dirIfEqual!'
+        iSplit = iSplits[iDir]
+
+        #-----------------------------------------------------------------------
+        # Establish partition point and assign to child
+        #-----------------------------------------------------------------------
+        UTrain = UTrain[:, iDir]
+        UTrainSort = np.sort(UTrain)
+
+        # The convoluted nature of the below is to avoid numerical errors
+        uTrainSortLeftPart = UTrainSort[iSplit]
+        UTrainSort     = UTrainSort - uTrainSortLeftPart
+        partitionPoint = UTrainSort[iSplit]*0.5 + UTrainSort[iSplit+1]*0.5
+        partitionPoint = partitionPoint + uTrainSortLeftPart
+        UTrainSort     = UTrainSort + uTrainSortLeftPart
+
+        bLessThanTrain = (UTrain <= partitionPoint)
+
+        if (not np.any(bLessThanTrain)) or np.all(bLessThanTrain):
+            assert (True), 'Suggested split with empty!'
+
+        #-----------------------------------------------------------------------
+        # Recur tree growth to child nodes and constructs tree struct
+        #-----------------------------------------------------------------------
+        tree = {}
+        tree["bLeaf"]   = False
+        tree["Npoints"] = N
+        tree["mean"]    = np.mean(YTrain, axis=0)
+
+        if bReg:
+            if (not options["org_stdY"].size == 0):
+                tree["mean"] = tree["mean"] * options["org_stdY"]
+
+            if (not options["org_muY"].size == 0):
+                tree["mean"] = tree["mean"] + options["org_muY"]
+
+        treeLeft  = growCCT(XTrain[bLessThanTrain, :], YTrain[bLessThanTrain,  :], bReg, options, iFeatureNum, depth+1)
+        treeRight = growCCT(XTrain[~bLessThanTrain,:], YTrain[~bLessThanTrain, :], bReg, options, iFeatureNum, depth+1)
+        tree["iIn"] = iIn
+
+        if options["bRCCA"]:
+            try:
+                if inspect.isfunction(fExp):
+                    tree["featureExpansion"] = fExp # Ensure variable is defined
+            except NameError:
+                pass
+
+        tree["decisionProjection"] = projMat[:, iDir]
+        tree["paritionPoint"]      = partitionPoint
+        tree["lessthanChild"]      = treeLeft
+        tree["greaterthanChild"]   = treeRight
+
+       return tree
