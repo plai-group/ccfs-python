@@ -1,4 +1,6 @@
 import inspect
+import warnings
+import scipy.io
 import numpy as np
 from utils.commonUtils import sVT
 from utils.commonUtils import is_numeric
@@ -10,6 +12,7 @@ from utils.ccfUtils import random_feature_expansion
 from utils.ccfUtils import genFeatureExpansionParameters
 from training_utils.component_analysis import componentAnalysis
 from training_utils.twopoint_max_marginsplit import twoPointMaxMarginSplit
+warnings.filterwarnings('ignore')
 
 import logging
 logger  = logging.getLogger(__name__)
@@ -79,6 +82,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     -------
     tree        = Structure containing learnt tree
     """
+    # Standard variables
+    eps = 2.2204e-16
+
     # Set any missing required variables
     if (options["mseTotal"]).size == 0:
         options["mseTotal"] = YTrain.var(axis=0)
@@ -207,8 +213,19 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             UTrain = fExp(XTrain[:, iIn]) @ projMat
 
         else:
+            Tdata  = scipy.io.loadmat('./data_test/XY.mat')
+            XTrainBag = Tdata['XTrainBag']
+            YTrainBag = Tdata['YTrainBag']
             projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
+            print(projMat)
+            Pdata  = scipy.io.loadmat('./data_test/XS.mat')
+            XTrain = Pdata['XTrain']
+            YTrain = Pdata['YTrain']
             UTrain = XTrain[:, iIn] @ projMat
+            print('UTrain')
+            print(UTrain)
+            print(UTrain.shape)
+            print('-------------')
 
         #-----------------------------------------------------------------------
         # Choose the features to use
@@ -216,12 +233,21 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         # This step catches splits based on no significant variation
         bUTrainVaries = queryIfColumnsVary(UTrain, options["XVariationTol"])
 
+        print('bUTrainVaries')
+        print(bUTrainVaries.shape)
+        print(bUTrainVaries)
+        print('-------------')
         if (not np.any(bUTrainVaries)):
             tree = setupLeaf(YTrain, bReg, options)
             return tree
 
         UTrain  = UTrain[:, bUTrainVaries]
         projMat = projMat[:, bUTrainVaries]
+
+        print('UTrain')
+        print(UTrain)
+        print('ProjMat')
+        print(projMat)
 
         if options["bUseOutputComponentsMSE"] and bReg and (YTrain.shape[1] > 1) and\
            (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
@@ -242,24 +268,40 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             # splits using current projection
             UTrainSort    = np.sort(UTrain[:, nVarAtt])
             iUTrainSort   = np.argsort(UTrain[:, nVarAtt])
-            bUniquePoints = np.concatenate((np.diff(UTrainSort, n=1, axis=0) > options["XVariationTol"], False))
-
+            bUniquePoints = np.concatenate((np.diff(UTrainSort, n=1, axis=0) > options["XVariationTol"], np.array([False])))
+            print('sorts')
+            print(UTrainSort)
+            print(iUTrainSort)
             if options["bUseOutputComponentsMSE"] and bReg and YTrain.shape[1] > 1 and (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
+                print('active')
                 VTrainSort = VTrain[iUTrainSort, :]
             else:
+                print('not active')
                 VTrainSort = YTrain[iUTrainSort, :]
 
+            print(VTrainSort)
+
             leftCum = np.cumsum(VTrainSort, axis=0)
+
             if YTrain.shape[1] ==1 or options["bSepPred"] and (not bReg):
                 # Convert to [class_doesnt_exist,class_exists]
                 leftCum = np.concatenate((np.subtract(sVT(X=np.arange(0,N)), leftCum), leftCum))
 
-            rightCum = np.concatenate((np.subtract(leftCum[-1, :], leftCum)))
+            rightCum = np.subtract(leftCum[-1, :], leftCum)
 
             # Calculate the metric values of the current node and two child nodes
             if not bReg:
-                pL = np.divide(leftCum,  sVT(X=np.arange(0,N)))
-                pR = np.divide(rightCum, sVT(X=np.arange(N-1, -1, -1)))
+                print(leftCum)
+                print(rightCum)
+                pL = np.divide(leftCum,  (np.arange(1, N+1)[np.newaxis]).T)
+                pR = np.divide(rightCum, (np.arange(N-1, -1, -1)[np.newaxis]).T)
+                print('not reg metric cal')
+                print(np.arange(1, N+1, 1))
+                print(np.arange(N-1, -1, -1))
+                print(pL)
+                print(pR)
+                print(pL.shape)
+                print(pR.shape)
 
                 split_criterion = options["splitCriterion"]
                 if split_criterion == 'gini':
@@ -267,12 +309,12 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                     lTerm = -pL**2
                     rTerm = -pR**2
                 elif split_criterion =='info':
-                    lTerm = np.multiply(-pL, np.log2(pL))
-                    lTerm[pL == 0] = 0
-                    rTerm = np.multiply(-pR, np.log2(pL))
-                    rTerm[pR == 0] = 0
+                    lTerm = np.multiply(-pL, np.log2(pL, order='F'))
+                    lTerm[np.absolute(pL) == 0] = 0
+                    rTerm = np.multiply(-pR, np.log2(pR, order='F'))
+                    rTerm[np.absolute(pR) == 0] = 0
                 else:
-                    assert (True), 'Invalid split criterion!'
+                    assert (False), 'Invalid split criterion!'
 
                 if (YTrain.shape[1] == 1) or options["bSepPred"]:
                     # Add grouped terms back together
@@ -282,6 +324,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
                 if (not is_numeric(options["taskWeights"])) and (not options["multiTaskGainCombination"] == 'max'):
                     # No need to do anything fancy in the metric calculation
+                    print('Lterm')
+                    print(lTerm)
+                    print(rTerm)
                     metricLeft  = np.sum(lTerm, axis=1)
                     metricRight = np.sum(rTerm, axis=1)
                 else:
@@ -314,24 +359,35 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                     # a seperate output anyway.
 
                 else:
-                    assert (True), 'Invalid split criterion!'
+                    assert (False), 'Invalid split criterion!'
 
-            metricCurrent = metricLeft[end,:]
-            metricLeft[~bUniquePoints, :] = np.inf
-            metricRight[~bUniquePoints,:] = np.inf
-
+            print('bUTrainVaries')
+            print(metricLeft.shape)
+            print(metricLeft)
+            print(metricRight)
+            print('-------------')
+            metricCurrent = metricLeft[-1]
+            metricLeft[~bUniquePoints]  = np.inf
+            metricRight[~bUniquePoints] = np.inf
+            print(metricLeft)
+            print(metricRight)
             # Calculate gain in metric for each of possible splits based on current
             # metric value minus metric value of child weighted by number of terms
             # in each child
-            metricGain = np.subtract(metricCurrent, (np.multiply(sVT(X=np.arange(N)), metricLeft) + np.multiply(sVT(X=np.arange(N-1, 0, -1)), metricRight))/N)
-
+            metricGain = np.subtract(metricCurrent,\
+                         np.add(np.multiply(np.arange(1,N+1, 1), metricLeft),\
+                               np.multiply(np.arange(N-1, -1, -1), metricRight))/N)
+            metricGain = sVT(metricGain)
+            print(metricGain)
+            print(metricGain.shape)
+            print('************************')
             # Combine gains if there are mulitple outputs.  Note that for gini,
             # info and mse, the joint gain is equal to the mean gain, hence
             # taking the mean here rather than explicitly calculating joints before.
             if metricGain.shape[1] > 1:
                 if is_numeric(options["taskWeights"]):
                     # If weights provided, weight task appropriately in terms of importance.
-                    metricGain = np.multiply(metricGain, sVT(X=options["taskWeights"].flatten()))
+                    metricGain = np.multiply(metricGain, sVT(X=options["taskWeights"].flatten(order='F')))
 
                 multiTGC = options["multiTaskGainCombination"]
                 if multiTGC == 'mean':
@@ -339,20 +395,22 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 elif multiTGC == 'max':
                     metricGain = np.max(metricGain, axis=1)
                 else:
-                    assert (True), 'Invalid option for options.multiTaskGainCombination'
+                    assert (False), 'Invalid option for options.multiTaskGainCombination!'
 
-                # Disallow splits that violate the minimum number of leaf points
-                end = metricGain.shape[0]
-                metricGain[0:(options["minPointsLeaf"]-1)] = -np.inf;
-                metricGain[(end-(options["minPointsLeaf"]-1)):] = -np.inf; # Note that end is never chosen anyway
+            # Disallow splits that violate the minimum number of leaf points
+            end = (metricGain.shape[0] - 1)
+            metricGain[0:(options["minPointsLeaf"]-1)] = -np.inf;
+            metricGain[(end-(options["minPointsLeaf"]-1)):] = -np.inf; # Note that end is never chosen anyway
 
-                # Randomly sample from equally best splits
-                iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])
-                splitGains[nVarAtt] = np.max(metricGain[0:-1])
-                iEqualMax = (np.absolute(metricGain[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero()
-                if iEqualMax.size == 0:
-                    iEqualMax = 1
-                iSplits[nVarAtt] = iEqualMax[np.random.randint(iEqualMax.size)]
+            # Randomly sample from equally best splits
+            iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])
+            splitGains[nVarAtt] = np.max(metricGain[0:-1])
+            iEqualMax = ((np.absolute(metricGain[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero())[0]
+            print('iEqual')
+            print(iEqualMax)
+            if iEqualMax.size == 0:
+                iEqualMax = np.array([1])
+            iSplits[nVarAtt] = iEqualMax[np.random.randint(iEqualMax.size)]
 
         # If no split gives a positive gain then stop
         if np.max(splitGains) < 0:
@@ -360,17 +418,23 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             return tree
 
         # Establish between projection direction
-        maxGain   = np.max(splitGains)
-        iEqualMax = (np.absolute(splitGains - maxGain) < (10 * eps)).ravel().nonzero()
+        maxGain   = np.max(splitGains, axis=0)
+        print('00000000000')
+        print(maxGain)
+        print('444444444444')
+        iEqualMax = ((np.absolute(splitGains - maxGain) < (10 * eps)).ravel().nonzero())[0]
+        print(iEqualMax)
         # Use given method to break ties
         if options["dirIfEqual"] == 'rand':
             iDir = iEqualMax[np.random.randint(iEqualMax.size)]
         elif options["dirIfEqual"] == 'first':
+            print('first')
             iDir = iEqualMax[0]
         else:
-            assert (True), 'invalid dirIfEqual!'
-        iSplit = iSplits[iDir]
-
+            assert (False), 'invalid dirIfEqual!'
+        iSplit = iSplits[iDir].astype(int)
+        print('------iDir--------------')
+        print(iDir)
         #-----------------------------------------------------------------------
         # Establish partition point and assign to child
         #-----------------------------------------------------------------------
@@ -378,6 +442,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         UTrainSort = np.sort(UTrain)
 
         # The convoluted nature of the below is to avoid numerical errors
+        print('------iSplit--------------')
+        print(iSplit)
+
         uTrainSortLeftPart = UTrainSort[iSplit]
         UTrainSort     = UTrainSort - uTrainSortLeftPart
         partitionPoint = UTrainSort[iSplit]*0.5 + UTrainSort[iSplit+1]*0.5
@@ -387,37 +454,37 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         bLessThanTrain = (UTrain <= partitionPoint)
 
         if (not np.any(bLessThanTrain)) or np.all(bLessThanTrain):
-            assert (True), 'Suggested split with empty!'
+            assert (False), 'Suggested split with empty!'
 
-        #-----------------------------------------------------------------------
-        # Recur tree growth to child nodes and constructs tree struct
-        #-----------------------------------------------------------------------
-        tree = {}
-        tree["bLeaf"]   = False
-        tree["Npoints"] = N
-        tree["mean"]    = np.mean(YTrain, axis=0)
+    #-----------------------------------------------------------------------
+    # Recur tree growth to child nodes and constructs tree struct
+    #-----------------------------------------------------------------------
+    tree = {}
+    tree["bLeaf"]   = False
+    tree["Npoints"] = N
+    tree["mean"]    = np.mean(YTrain, axis=0)
 
-        if bReg:
-            if (not options["org_stdY"].size == 0):
-                tree["mean"] = tree["mean"] * options["org_stdY"]
+    if bReg:
+        if (not options["org_stdY"].size == 0):
+            tree["mean"] = tree["mean"] * options["org_stdY"]
 
-            if (not options["org_muY"].size == 0):
-                tree["mean"] = tree["mean"] + options["org_muY"]
+        if (not options["org_muY"].size == 0):
+            tree["mean"] = tree["mean"] + options["org_muY"]
 
-        treeLeft  = growCCT(XTrain[bLessThanTrain, :], YTrain[bLessThanTrain,  :], bReg, options, iFeatureNum, depth+1)
-        treeRight = growCCT(XTrain[~bLessThanTrain,:], YTrain[~bLessThanTrain, :], bReg, options, iFeatureNum, depth+1)
-        tree["iIn"] = iIn
+    treeLeft  = growCCT(XTrain[bLessThanTrain, :], YTrain[bLessThanTrain,  :], bReg, options, iFeatureNum, depth+1)
+    treeRight = growCCT(XTrain[~bLessThanTrain,:], YTrain[~bLessThanTrain, :], bReg, options, iFeatureNum, depth+1)
+    tree["iIn"] = iIn
 
-        if options["bRCCA"]:
-            try:
-                if inspect.isfunction(fExp):
-                    tree["featureExpansion"] = fExp # Ensure variable is defined
-            except NameError:
-                pass
+    if options["bRCCA"]:
+        try:
+            if inspect.isfunction(fExp):
+                tree["featureExpansion"] = fExp # Ensure variable is defined
+        except NameError:
+            pass
 
-        tree["decisionProjection"] = projMat[:, iDir]
-        tree["paritionPoint"]      = partitionPoint
-        tree["lessthanChild"]      = treeLeft
-        tree["greaterthanChild"]   = treeRight
+    tree["decisionProjection"] = projMat[:, iDir]
+    tree["paritionPoint"]      = partitionPoint
+    tree["lessthanChild"]      = treeLeft
+    tree["greaterthanChild"]   = treeRight
 
-       return tree
+    return tree

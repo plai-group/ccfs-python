@@ -283,11 +283,11 @@ def amerge(a, b, p):
     """
     a1, a2 = a.shape
     b1, b2 = b.shape
-    p1, p2 = p.shape
+    p1 = p.shape[0]
 
-    if p2 > a1:
-        arr = np.zeros((p2, b2))
-        for k in p[0]:
+    if p1 > a1:
+        arr = np.zeros((p1, b2))
+        for k in p:
             arr[k, :] = b[k]
 
         return arr

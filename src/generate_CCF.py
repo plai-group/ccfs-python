@@ -257,18 +257,18 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
         if bKeepTrees:
             forest[nT] = tree
 
-    # # Setup outputs
-    # CCF = {}
-    # CCF["Trees"]   = forest
-    # CCF["bReg"]    = bReg
-    # CCF["options"] = optionsFor
-    # CCF["inputProcessDetails"] = inputProcessDetails
-    # CCF["classNames"] = optionsFor["classNames"]
-    #
-    # if optionsFor["bBagTrees"] and bKeepTrees:
-    #     # Calculate the out of back error if relevant
-    #     cumOOb = np.zeros((YTrain.shape[0], (CCF["Trees"][1]["predictsOutOfBag"]).shape[1]))
-    #     nOOb   = np.zeros((YTrain.shape[0], 1))
+    # Setup outputs
+    CCF = {}
+    CCF["Trees"]   = forest
+    CCF["bReg"]    = bReg
+    CCF["options"] = optionsFor
+    CCF["inputProcessDetails"] = inputProcessDetails
+    CCF["classNames"] = optionsFor["classNames"]
+
+    if optionsFor["bBagTrees"] and bKeepTrees:
+        # Calculate the out of back error if relevant
+        cumOOb = np.zeros((YTrain.shape[0], (CCF["Trees"][1]["predictsOutOfBag"]).shape[1]))
+        nOOb   = np.zeros((YTrain.shape[0], 1))
     #     for nTO in range(CCF["Trees"]):
     #         cumOOb[CCF["Trees"][nTO]["iOutOfBag"], :] = cumOOb[CCF["Trees"][nTO]["iOutOfBag"], :] + CCF["Trees"]["nTO"]["predictsOutOfBag"]
     #         nOOb[CCF["Trees"][nTO]["iOutOfBag"] = nOOb[CCF["Trees"][nTO]["iOutOfBag"] + 1
@@ -288,8 +288,8 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     #         forPreds[:, -1]        = np.argmax(oobPreds[:, optionsFor["task_ids"][-1]:-1], axis=1)
     #         YTrainCollapsed[:, -1] = np.argmax(  YTrain[:, optionsFor["task_ids"][-1]:-1], axis=1)
     #         CCF["outOfBagError"]   = (1 - np.nanmean(forPreds==YTrainCollapsed, axis=0))
-    # else:
-    #     CCF["outOfBagError"] = 'OOB error only returned if bagging used and trees kept.\
-    #                             Please use CCF-Bag instead via options=optionsClassCCF.defaultOptionsCCFBag!'
+    else:
+        CCF["outOfBagError"] = 'OOB error only returned if bagging used and trees kept.\
+                                Please use CCF-Bag instead via options=optionsClassCCF.defaultOptionsCCFBag!'
 
     return CCF#, forestPredictsTest, forestProbsTest, treeOutputTest

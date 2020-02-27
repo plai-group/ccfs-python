@@ -41,6 +41,12 @@ def componentAnalysis(X, Y, processes, epsilon):
     bYvaries = queryIfColumnsVary(X=Y, tol=1e-12)
     nXorg = bXVaries.size
     nYorg = bYvaries.size
+    print('4444444444444444444')
+    print(bXVaries)
+    print(nXorg)
+    print(bYvaries)
+    print(nYorg)
+    print('5555555555555555555')
 
     if ~(np.any(bXVaries)) or ~(np.any(bYvaries)):
         # One of X or Y doesn't vary so component analysis fails.
@@ -70,8 +76,15 @@ def componentAnalysis(X, Y, processes, epsilon):
     # in a constant translation of this space.
     muX = np.divide(np.sum(X, axis=0), X.shape[0])
     muY = np.divide(np.sum(Y, axis=0), Y.shape[0])
+    print(muX)
+    print(muY)
     X = np.subtract(X, muX)
     Y = np.subtract(Y, muY)
+
+    print('$$$$$$$$$$$$$$$$')
+    print(X)
+    print(Y)
+    print('------------------')
 
     # Initialize the project matrices
     projMat  = np.full((X.shape[1], 0), np.nan)
@@ -92,7 +105,8 @@ def componentAnalysis(X, Y, processes, epsilon):
     if processes['CCA'] or processes['CCAclasswise']:
         # CCA based projections
         q1, r1, p1 = la.qr(X, pivoting=True, mode='economic')
-        p1 = sVT(p1).T
+        print('P1')
+        print(p1)
         # Reduce to full rank within some tolerance
         if r1.size == 0:
             rankX = 0
@@ -113,8 +127,8 @@ def componentAnalysis(X, Y, processes, epsilon):
             r1 = r1[0:rankX, 0:rankX]
 
         if processes['CCA']:
-            q2, r2, p2 = la.qr(Y, pivoting=True, mode='economic')
-            p2 = sVT(p2).T
+            q2, r2, p2 = la.qr(Y, mode='economic', pivoting=True)
+
             # Reduce to full rank within some tolerance
             if r2.size == 0:
                 rankY = 0
@@ -139,12 +153,10 @@ def componentAnalysis(X, Y, processes, epsilon):
             d = np.min((rankX, rankY))
 
             if rankX >= rankY:
-                L, D, Mh = np.linalg.svd(q1.T @ q2)
-                M = Mh.T
+                L, D, M = np.linalg.svd(q1.T @ q2)
                 D = np.diag(D)
             else:
-                M, D, Lh = np.linalg.svd(q2.T @ q1)
-                L = Lh.T
+                M, D, L = np.linalg.svd(q2.T @ q1)
                 D = np.diag(D)
 
             if isSquare(r1):
@@ -156,11 +168,16 @@ def componentAnalysis(X, Y, processes, epsilon):
             locProj = amerge(a=locProj, b=np.concatenate((locProj, np.zeros((x2-rankX, d)))), p=p1)
             projMat = np.concatenate((projMat, locProj), axis=1) # Maybe fix with axis
 
+            # Projection For Y
             r2 = r2[0:rankY, 0:rankY]
+            print('r2')
+            print(r2)
             if isSquare(r2):
                 locyProj = np.linalg.solve(r2, M[:, 0:d] * np.sqrt(x1-1))
             else:
-                locyProj, _, _, _  = np.linalg.lstsq(r2, M[:, 0:d] * np.sqrt(x1-1))
+                locyProj, _, _, _  = np.linalg.lstsq(r2, M[:, 0:d] * np.sqrt(x1-1), rcond=-1)
+            print('--------locyproj------')
+            print(locyProj)
             locyProj = amerge(a=locyProj, b=np.concatenate((locyProj, np.zeros((K-rankY, d)))), p=p2)
             yprojMat = np.concatenate((yprojMat, locyProj), axis=1)
 
