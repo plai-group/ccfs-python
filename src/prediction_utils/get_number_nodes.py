@@ -1,7 +1,7 @@
+# Calculates number of nodes in a tree
 
 def get_number_of_nodes(tree):
-    # Calculates number of nodes in a tree
-    if tree.bLeaf:
+    if tree["bLeaf"]:
         n_nodes = 1
     else:
         n_nodes_left  = get_number_of_nodes(tree["lessthanChild"])

@@ -18,5 +18,5 @@ def  traverse_tree_predict(tree, X):
     else:
         if ('rotDetails' in tree) and (not tree["rotDetails"].size == 0):
             X = np.subtract(X, tree["rotDetails"]["muX"]) * tree["rotDetails"]["R"]
-    
+
     return leaf_mean, leaf_node
