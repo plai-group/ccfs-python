@@ -43,8 +43,7 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
             if islogical(forestPredicts):
                 assert (forestPredicts.shape[1] == 1), 'Class names should have been a cell if multiple outputs!'
                 #print(forestPredicts)
-                forestPredicts = CCF["classNames"][forestPredicts]
-                #forestPredicts = CCF["classNames"][forestPredicts+1]
+                forestPredicts = CCF["classNames"][forestPredicts+1]
             else:
                 forestPredicts = CCF["classNames"][forestPredicts]
         # Fix needed -- Support for cell array

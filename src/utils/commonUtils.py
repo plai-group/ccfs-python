@@ -302,7 +302,7 @@ def islogical(X):
     Check if the Numpy array is a valid Boolean array
     """
     def isBool(val):
-        if int(val) == 1 or int(val) == 0 or val == False or val == True:
+        if int(val) == 1 or int(val) == 0:
             return True
         else:
             return False
