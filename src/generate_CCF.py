@@ -27,12 +27,12 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
         XTrain = random_missing_vals(XTrain)
 
     N = XTrain.shape[0]
-    print('++++++++++++++++++++++')
-    print(N, Ntrain)
-    print('======================')
+    # print('++++++++++++++++++++++')
+    # print(N, Ntrain)
+    # print('======================')
     # Bag if required
     if optionsFor["bBagTrees"] or Ntrain != N:
-        print()
+        #print()
         all_samples = np.arange(N)
         iTrainThis  = np.random.choice(all_samples, Ntrain, replace=optionsFor["bBagTrees"])
         iOob        = np.setdiff1d(all_samples, iTrainThis).T
@@ -252,16 +252,20 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
 
     # Train the trees
     # TODO: Add parallel support
-    for nT in range(2):
+    for nT in range(nTrees):
         # Generate tree
         tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
 
         if bKeepTrees:
             forest[nT] = tree
-        print(nT)
+
+        if nT%25 == 0:
+            print('Progress: {}/{}'.format(nT, nTrees))
 
     print('Completed')
     print('..................................................................')
+
+    
     # Setup outputs
     CCF = {}
     CCF["Trees"]   = forest

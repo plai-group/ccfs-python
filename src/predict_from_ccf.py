@@ -39,20 +39,20 @@ def predictFromCCF(CCF, X):
     nTrees = len(CCF["Trees"])
 
     # Preallocate output space
-    print('------------------')
-    print('Trees', nTrees)
-    print(X.shape)
+    #print('------------------')
+    #print('Trees', nTrees)
+    #print(X.shape)
     pcctx0 = predictFromCCT(CCF["Trees"][0], X)[0]
     pcctx0 = np.expand_dims(pcctx0, axis=1)
-    print('-------------------')
+    #print('-------------------')
     treeOutputs = np.tile(pcctx0, [1, nTrees, 1])
-    print(treeOutputs.shape)
+    #print(treeOutputs.shape)
 
     for n in range(1, nTrees):
-        print(predictFromCCT(CCF["Trees"][n], X)[0].shape)
+        #print(predictFromCCT(CCF["Trees"][n], X)[0].shape)
         treeOutputs[:, n, :], _ = predictFromCCT(CCF["Trees"][n], X)
 
-    print('-------------completed-----------')
+    #print('-------------completed-----------')
     forestPredicts, forestProbs = treeOutputsToForestPredicts(CCF, treeOutputs)
 
     return forestPredicts, forestProbs, treeOutputs
