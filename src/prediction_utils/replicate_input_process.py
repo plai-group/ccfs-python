@@ -13,7 +13,7 @@ def replicateInputProcess(Xraw, InputProcessDetails):
     Cats     = InputProcessDetails["Cats"]
 
     if Xraw.shape[1] != bOrdinal.size:
-        assert (True), 'Incorrect number of features!'
+        assert (False), 'Incorrect number of features!'
 
     # TODO: Add support for dataframe
     # if istable(Xraw):
@@ -24,10 +24,10 @@ def replicateInputProcess(Xraw, InputProcessDetails):
 
     X = Xraw[:, bOrdinal]
 
-    if isinstance(XTrainRC, pd.DataFrame):
-        # TODO: Add support for dataframe
-        # bNumeric = is_numeric(X=X, compress=False)
-        pass
+    # if isinstance(X, pd.DataFrame):
+    #     # TODO: Add support for dataframe
+    #     # bNumeric = is_numeric(X=X, compress=False)
+    #     pass
 
     XCat = Xraw[:, ~bOrdinal]
 

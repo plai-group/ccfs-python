@@ -228,7 +228,6 @@ def makeSureString(A, nSigFigTol, access_all = False):
     """
     # To Match MATLAB function
     def num2str(val):
-        print(val)
         if val <= 9:
             try:
                 rval = ord(str(val))
@@ -263,7 +262,7 @@ def makeSureString(A, nSigFigTol, access_all = False):
 
 def dict2array(X):
     """
-    Returns a numpy array from dictionary
+    Returns a Numpy array from dictionary
 
     Parameters
     ----------
@@ -279,7 +278,7 @@ def dict2array(X):
 
 def amerge(a, b, p):
     """
-    Advanced concatenate for numpy similar to MATLAB
+    Advanced merging for Numpy array similar to MATLAB
     """
     a1, a2 = a.shape
     b1, b2 = b.shape
@@ -295,3 +294,19 @@ def amerge(a, b, p):
         a[p, :] = b
 
         return a
+
+def islogical(X):
+    """
+    Check if the Numpy array is a valid Boolean array
+    """
+    def isBool(val):
+        if int(val) == 1 or int(val) == 0 or val == False or val == True:
+            return True
+        else:
+            return False
+
+    isBool_f = np.vectorize(isBool, otypes=[bool]) # return numpy array
+    all_vals = isBool_f(X)
+
+    return np.all(all_vals)
+    

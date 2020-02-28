@@ -22,11 +22,11 @@ def twoPointMaxMarginSplit(X, Y, tol):
     # Otherwise the optimal spliting plane is the plane perpendicular
     # to the vector between the two points (rmm) and the maximal
     # marginal split point (cmm) is halway between the two points on this line.
-    iType2 = (~bType1).ravel().nonzero()[0][0]
+    iType2 = (~bType1).ravel().nonzero()[0]
     rmm    = (X[iType2,:] - X[0,:])[np.newaxis].T
-    cmm    = 0.5 * (X[iType2,:] @ rmm + X[0,:] @ rmm)
+    cmm    = 0.5 * (X[iType2,:] * rmm + X[0,:] * rmm)
 
     if np.any(np.isnan(cmm)) or np.any(np.isinf(cmm)):
-        assert (True), 'Suggested split point at infitity or NaN!'
+        assert (False), 'Suggested split point at infitity or NaN!'
 
     return bSp, rmm, cmm

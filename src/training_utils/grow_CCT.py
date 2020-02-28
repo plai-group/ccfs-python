@@ -214,13 +214,13 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
         else:
             Tdata  = scipy.io.loadmat('./data_test/XY.mat')
-            XTrainBag = Tdata['XTrainBag']
-            YTrainBag = Tdata['YTrainBag']
+            # XTrainBag = Tdata['XTrainBag']
+            # YTrainBag = Tdata['YTrainBag']
             projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
             print(projMat)
-            Pdata  = scipy.io.loadmat('./data_test/XS.mat')
-            XTrain = Pdata['XTrain']
-            YTrain = Pdata['YTrain']
+            # Pdata  = scipy.io.loadmat('./data_test/XS.mat')
+            # XTrain = Pdata['XTrain']
+            # YTrain = Pdata['YTrain']
             UTrain = XTrain[:, iIn] @ projMat
             print('UTrain')
             print(UTrain)

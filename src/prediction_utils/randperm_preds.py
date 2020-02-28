@@ -1,3 +1,4 @@
+from src.predict_from_cct import predictFromCCT
 from utils.ccfUtils import random_missing_vals
 
 
@@ -18,7 +19,7 @@ def randperm_preds(tree, X, bOutOfBag=None):
     YpermPreds = predicts
     """
 
-    if bOutOfBag
+    if bOutOfBag == None:
         bOutOfBag = True
 
     if bOutOfBag:
@@ -30,7 +31,7 @@ def randperm_preds(tree, X, bOutOfBag=None):
     YpermPreds = {}
 
     for d in range(D):
-        Xd_true = X[:, ]
+        Xd_true = X[:, d]
         X[:, d] = X[np.random.permutation(N), d]
         YpermPreds[d] = predictFromCCT(tree, X)
         X[:, d] = Xd_true
