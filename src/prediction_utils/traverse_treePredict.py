@@ -54,6 +54,6 @@ def traverse_tree_predict(tree, X):
             leaf_mean[bLessChild, :], leaf_node[bLessChild] = traverse_tree_predict(tree["lessthanChild"], X[bLessChild, :])
 
         if np.any(~bLessChild):
-            leaf_mean[~bLessChild, :], leaf_node[~bLessChild] = traverse_tree_predict(tree["lessthanChild"], X[~bLessChild, :])
+            leaf_mean[~bLessChild, :], leaf_node[~bLessChild] = traverse_tree_predict(tree["greaterthanChild"], X[~bLessChild, :])
 
     return leaf_mean, leaf_node

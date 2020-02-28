@@ -28,9 +28,7 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
                 forestPredicts = np.empty((forestProbs.shape[0], task_ids_size))
                 forestPredicts.fill(np.nan)
 
-                for nO in range ((task_ids_size)-1):
-                    forestPredicts[:, nO] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:(CCF["options"]["task_ids"]+1)-1], axis=1)
-                forestPredicts[:, -1] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:], axis=1)
+                forestPredicts[:, 0] = np.argmax(forestProbs, axis=1)
             else:
                 forestPredicts = np.empty((forestProbs.shape[0], CCF["options"]["task_ids"].size))
                 forestPredicts.fill(np.nan)
@@ -45,7 +43,8 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
             if islogical(forestPredicts):
                 assert (forestPredicts.shape[1] == 1), 'Class names should have been a cell if multiple outputs!'
                 #print(forestPredicts)
-                forestPredicts = CCF["classNames"][forestPredicts+1]
+                forestPredicts = CCF["classNames"][forestPredicts]
+                #forestPredicts = CCF["classNames"][forestPredicts+1]
             else:
                 forestPredicts = CCF["classNames"][forestPredicts]
         # Fix needed -- Support for cell array
