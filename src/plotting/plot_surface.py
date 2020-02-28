@@ -27,7 +27,8 @@ def plotCCFDecisionSurface(CCF, XTrain, X, Y, nx1Res=200, nx2Res=200, n_contours
     numericPreds.fill(np.nan)
     numericPreds = preds
     numericPreds = np.reshape(numericPreds, (x2.shape))
-    print(nVals)
+    #print(nVals)
+
     if len(n_contours_or_vals) == 0:
         if nVals >= (preds.shape[0])/2:
             # Presumably regression
