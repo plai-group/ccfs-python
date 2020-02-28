@@ -50,7 +50,7 @@ def predictFromCCF(CCF, X):
 
     for n in range(1, nTrees):
         print(predictFromCCT(CCF["Trees"][n], X)[0].shape)
-        treeOutputs[:, n, :], _ = predictFromCCT(CCF["Trees"][n], X)[0]
+        treeOutputs[:, n, :], _ = predictFromCCT(CCF["Trees"][n], X)
 
     print('-------------completed-----------')
     forestPredicts, forestProbs = treeOutputsToForestPredicts(CCF, treeOutputs)

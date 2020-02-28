@@ -23,16 +23,26 @@ def traverse_tree_predict(tree, X):
 
         if ('featureExpansion' in tree.keys()):
             if not (len(tree["featureExpansion"]) == 0):
-                bLessChild = (tree["featureExpansion"](X[:, tree["iIn"]]) @ tree["decisionProjection"]) <= tree["paritionPoint"]
+                print('not featureExpansion')
+                print((tree["featureExpansion"](X[:, tree["iIn"]]).shape))
+                print(tree["decisionProjection"].shape)
+                print(tree["paritionPoint"].shape)
+                print('^^^^^^^^^^^^^^^^^^^^^')
+                bLessChild = np.dot(tree["featureExpansion"](X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
             else:
-                bLessChild = (X[:, tree["iIn"]]) @ tree["decisionProjection"] <= tree["paritionPoint"]
+                print('not featureExpansion')
+                print(X[:, tree["iIn"]].shape)
+                print(tree["decisionProjection"].shape)
+                print(tree["paritionPoint"].shape)
+                print('^^^^^^^^^^^^^^^^^^^^^')
+                bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
         else:
             print('usecase-2')
             print(tree["decisionProjection"].shape)
             print(tree["paritionPoint"].shape)
             print(X[:, tree["iIn"]].shape)
             print('%%%%%%%%%%%%-2')
-            bLessChild = (X[:, tree["iIn"]]) @ tree["decisionProjection"] <= tree["paritionPoint"]
+            bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
 
         print(bLessChild)
         leaf_mean =  np.empty((X.shape[0], tree["mean"].size))

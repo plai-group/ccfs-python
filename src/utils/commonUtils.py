@@ -140,15 +140,17 @@ def queryIfOnlyTwoUniqueRows(X):
     -------
     bVar: Numpy Boolean array
     """
-    def my_equal(a, b):
-        return np.equal(b, a, dtype=int, casting="unsafe")
+    # def my_equal(a, b):
+    #     return np.equal(b, a, dtype=int, casting="unsafe")
 
     if X.shape[0] == 2:
         bLessThanTwoUniqueRows = True
         return bLessThanTwoUniqueRows
 
-    eqX = np.apply_along_axis(my_equal, axis=1, arr=X, b=X[0,:])
-    bEqualFirst = (np.all(eqX, axis=1)[np.newaxis]).T
+    #eqX = np.apply_along_axis(my_equal, axis=1, arr=X, b=X[0,:])
+
+    eqX = np.equal(X, X[0, :])
+    bEqualFirst = np.all(eqX, axis=1)
 
     iFirstNotEqual = (~bEqualFirst).ravel().nonzero()[0]
     if iFirstNotEqual.size == 0:
@@ -156,10 +158,10 @@ def queryIfOnlyTwoUniqueRows(X):
         return bLessThanTwoUniqueRows
 
     iToCheck = ((~bEqualFirst[1:]).ravel().nonzero()[0]) + 1
-    Xit = np.apply_along_axis(my_equal, axis=1, arr=X[iToCheck, :], b=X[iFirstNotEqual[0], :])
+    # Xit = np.apply_along_axis(my_equal, axis=1, arr=X[iToCheck, :], b=X[iFirstNotEqual[0], :])
+    Xit = np.equal(X[iToCheck, :], X[iFirstNotEqual[0], :])
     bNotUnique = np.all(Xit, axis=1)
-
-    bLessThanTwoUniqueRows = np.all(bNotUnique)
+    bLessThanTwoUniqueRows = np.all(bNotUnique, axis=0)
 
     return bLessThanTwoUniqueRows
 
@@ -309,4 +311,3 @@ def islogical(X):
     all_vals = isBool_f(X)
 
     return np.all(all_vals)
-    
