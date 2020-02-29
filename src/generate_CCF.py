@@ -260,7 +260,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
             optionsFor["projections"][npf] = False
 
     if not bKeepTrees:
-        bKeepTrees = true
+        bKeepTrees = True
         logger.warning('Selected not to keep trees but only requested a single output of the trees, reseting bKeepTrees to true')
 
     if XTest == None:
@@ -276,7 +276,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     n_nodes_trees.fill(np.nan)
     tree_train_times = np.empty((nTrees, 1))
     tree_train_times.fill(np.nan)
-    tree_test_times = np.empty((nTrees,1))
+    tree_test_times  = np.empty((nTrees,1))
     tree_test_times.fill(np.nan)
 
     Ntrain = int(N * optionsFor["propTrain"])
