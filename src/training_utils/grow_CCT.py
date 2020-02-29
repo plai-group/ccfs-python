@@ -112,7 +112,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         sumY = np.sum(YTrain, axis=0)
         bYVaries = np.logical_and((sumY != 0), (sumY != N))
         if not (np.any(bYVaries)):
-            tree = setupLeaf(YTrain,bReg,options);
+            tree = setupLeaf(YTrain, bReg, options)
             return tree
 
     else:
@@ -321,9 +321,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                     lTerm = -pL**2
                     rTerm = -pR**2
                 elif split_criterion =='info':
-                    lTerm = np.multiply(-pL, np.log2(pL, order='F'))
+                    lTerm = np.multiply(-pL, np.log2(pL))
                     lTerm[np.absolute(pL) == 0] = 0
-                    rTerm = np.multiply(-pR, np.log2(pR, order='F'))
+                    rTerm = np.multiply(-pR, np.log2(pR))
                     rTerm[np.absolute(pR) == 0] = 0
                 else:
                     assert (False), 'Invalid split criterion!'
@@ -343,7 +343,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                     # Need to do grouped sums for each of the outputs as will be
                     # doing more than a simple averaging of there values
                    metricLeft = np.cumsum(lTerm, axis=1)
-                   taskidxs_L = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
+                   taskidxs_L = np.array([options["task_ids"][1:] - 1), np.array([-1]]))
                    metricLeft = metricLeft[:, taskidxs_L] - np.concatenate((np.zeros((metricLeft.shape[0], 1)), metricLeft[:, (options["task_ids"][1:] - 1)]))
 
                    metricRight = np.cumsum(rTerm, axis=1)
@@ -352,13 +352,12 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             else:
                 if options["splitCriterion"] == 'mse':
                     cumSqLeft = np.cumsum(VTrainSort**2)
-                    varData   = np.subtract((cumSqLeft[-1,:]/N), ((leftCum[end, :]/N)**2))
+                    varData   = np.subtract((cumSqLeft[-1,:]/N), ((leftCum[-1, :]/N)**2))
                     if np.all(varData < (options["mseTotal"] * options["mseErrorTolerance"])):
                         # Total variation is less then the allowed tolerance so
                         # terminate and construct a leaf
-                        tree = setupLeaf(YTrain, bReg, options);
+                        tree = setupLeaf(YTrain, bReg, options)
                         return tree
-
                     cumtotal_l = np.concatenate((np.zeros((1, VTrainSort.shape[1])), leftCum))
                     metricLeft = calc_mse(cumtotal=cumtotal_l, cumsq=cumSqLeft, YTrainSort=VTrainSort)
                     # For calculating the right need to go in additive order again
@@ -456,9 +455,6 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         UTrainSort = np.sort(UTrain)
 
         # The convoluted nature of the below is to avoid numerical errors
-        #print('------iSplit--------------')
-        #print(iSplit)
-
         uTrainSortLeftPart = UTrainSort[iSplit]
         UTrainSort     = UTrainSort - uTrainSortLeftPart
         partitionPoint = UTrainSort[iSplit]*0.5 + UTrainSort[iSplit+1]*0.5
@@ -501,11 +497,10 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 tree["featureExpansion"] = fExp # Ensure variable is defined
         except NameError:
             pass
-    #print('-------------')
+
     if len(projMat.shape) < 2:
         projMat = np.expand_dims(projMat, axis=1)
-    #print(projMat.shape)
-    #print(iDir)
+
     tree["decisionProjection"] = projMat[:, iDir]
     tree["paritionPoint"]      = partitionPoint
     tree["lessthanChild"]      = treeLeft
