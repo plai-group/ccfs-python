@@ -1,8 +1,9 @@
-import logging
 import numpy as np
-from utils.commonUtils import sVT
 from utils.ccfUtils import mat_unique
+from utils.commonUtils import sVT
+from utils.commonUtils import islogical
 
+import logging
 logger  = logging.getLogger(__name__)
 
 def classExpansion(Y, N, optionsFor):
@@ -47,14 +48,16 @@ def classExpansion(Y, N, optionsFor):
         assert (True), 'Dataframe support not yet implemented!'
         pass
 
-    elif np.array_equal(Y, Y.astype(bool)) or (np.max(Y.flatten(order='F')) == 1 and np.min(Y.flatten(order='F')) == 0):
+    elif islogical(Y) or (np.max(Y.flatten(order='F')) == 1 and np.min(Y.flatten(order='F')) == 0):
         N_c_present = np.cumsum(Y, axis=1)
-        if np.all(N_c_present[:,] == 1) and (not optionsFor["bSepPred"]):
+        if np.all(N_c_present[:, -1] == 1) and (not optionsFor["bSepPred"]):
             optionsFor["task_ids"] = 1
             classes = sVT(np.arange(0, Y.shape[1]))
         else:
             if (not optionsFor["bSepPred"]):
-                optionsFor["bSepPred"] = true
+                optionsFor["bSepPred"] = True
+                logger.warning('Providing a logical array with varying number of active classes, setting bSepPred to true.  For multi-output classification use array of class indices where each column is an output')
+
             optionsFor["task_ids"] = np.arange(0, Y.shape[1])
             classes = np.matlib.repmat([False, True], 1, Y.shape[1])
 
@@ -63,14 +66,9 @@ def classExpansion(Y, N, optionsFor):
         assert (not optionsFor["bSepPred"]),'Seperate in-out prediction is only valid when Y is a logical array!'
         classes = {}
         Ycell   = {}
-        # for n in range(Y.shape[1]):
-        #     [Ycell{n}, classes{n}, optionsFor] = classExpansion(Y[:, n], N, optionsFor)
-        #
-        # y_sizes = cellfun(@(x) size(x,2), Ycell);
-        # Y = cell2mat(Ycell);
-        # optionsFor["task_ids"] = 1+[0,cumsum(y_sizes(1:end-1))]
 
     if classes.shape[0] > (N-2):
-        assert (True), ('More than n_data_points-2 classes appear to be present.  Make sure no datapoints with missing output or regression option on!')
+        assert (False), ('More than n_data_points-2 classes appear to be present.  Make sure no datapoints with missing output or regression option on!')
+
 
     return Y, classes, optionsFor

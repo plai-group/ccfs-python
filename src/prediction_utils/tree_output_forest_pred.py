@@ -15,12 +15,13 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
     """
     if CCF["bReg"]:
         forestPredicts = np.squeeze(np.mean(treeOutputs, axis=1))
-        forestProbs = [];
+        forestProbs = []
     else:
         forestProbs = np.squeeze(np.mean(treeOutputs, axis=1))
 
         if CCF["options"]["bSepPred"]:
             forestPredicts = forestProbs > 0.5
+
         else:
             # Check if task_ids is single number
             if type(CCF["options"]["task_ids"]) == int:
@@ -32,7 +33,6 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
             else:
                 forestPredicts = np.empty((forestProbs.shape[0], CCF["options"]["task_ids"].size))
                 forestPredicts.fill(np.nan)
-
                 for nO in range ((CCF["options"]["task_ids"].size)-1):
                     forestPredicts[:, nO] = np.argmax(forestProbs[:, CCF["options"]["task_ids"][nO]:(CCF["options"]["task_ids"][nO+1]-1)], axis=1)
                 forestPredicts[:, -1] = np.argmax(forestProbs[:, CCF["options"]["task_ids"][-1]:], axis=1)
@@ -46,6 +46,7 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
                 forestPredicts = CCF["classNames"][forestPredicts+1]
             else:
                 forestPredicts = CCF["classNames"][forestPredicts]
+
         # Fix needed -- Support for cell array
         elif isinstance(CCF["classNames"], pd.DataFrame):
             assert (CCF["classNames"].size == forestPredicts.shape[1]), 'Number of predicts does not match the number of outputs in classNames'

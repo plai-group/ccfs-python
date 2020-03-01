@@ -16,25 +16,19 @@ def replicateInputProcess(Xraw, InputProcessDetails):
         assert (False), 'Incorrect number of features!'
 
     # TODO: Add support for dataframe
-    # if istable(Xraw):
-    #     try:
-    #         Xraw = table2array(Xraw)
-    #     except:
-    #         Xraw = table2cell(Xraw)
+    if isinstance(XTrainRC, pd.DataFrame):
+        featureNamesOrig = list(XTrainRC.columns.values)
+        # Convert to Numpy
+         raise NotImplementedError("To be implemented")
 
     X = Xraw[:, bOrdinal]
 
-    # if isinstance(X, pd.DataFrame):
-    #     # TODO: Add support for dataframe
-    #     # bNumeric = is_numeric(X=X, compress=False)
-    #     pass
-
+    # TODO: Maybe Impelement Expand the categorical features
     XCat = Xraw[:, ~bOrdinal]
 
     X = np.divide(np.subtract(X, InputProcessDetails["mu_XTrain"]), InputProcessDetails["std_XTrain"])
 
     if InputProcessDetails["bNaNtoMean"]:
         X[np.isnan(X)] = 0
-
 
     return X

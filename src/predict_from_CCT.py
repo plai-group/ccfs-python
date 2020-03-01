@@ -8,15 +8,15 @@ def predictFromCCT(tree, X):
 
     Parameters
     ----------
-    tree = output strcut from growTree
-    X = processed input features
+    tree: output strcut from growTree
+    X: processed input features
 
     Returns
     -------
-    leaf_mean = Mean of outputs present at the leaf.
+    leaf_mean:  Mean of outputs present at the leaf.
                 For classification then this represents the class
                 probability, for regression it is simply the output mean.
-    leaf_node = The full leaf node details for the assigned point.
+    leaf_node:  The full leaf node details for the assigned point.
     """
     if 'inputProcessDetails' in tree.keys():
         X = replicateInputProcess(X, tree["inputProcessDetails"])

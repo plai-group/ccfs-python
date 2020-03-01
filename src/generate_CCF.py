@@ -296,7 +296,6 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     print('Completed')
     print('..................................................................')
 
-
     # Setup outputs
     CCF = {}
     CCF["Trees"]   = forest
