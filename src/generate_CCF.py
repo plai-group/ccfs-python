@@ -34,13 +34,13 @@ def updateForD(optionsFor, D):
         logger.warning('Invalid option set for lambda')
 
     if optionsFor["bProjBoot"] == 'default':
-        if D <= optionsFor["lambda"]:
+        if int(D) <= optionsFor["lambda"]:
             optionsFor["bProjBoot"] = False
         else:
             optionsFor["bProjBoot"] = True
 
     if optionsFor["bBagTrees"] == 'default':
-        if D <= optionsFor["lambda"]:
+        if int(D) <= optionsFor["lambda"]:
             optionsFor["bBagTrees"] = True
         else
             optionsFor["bBagTrees"] = False

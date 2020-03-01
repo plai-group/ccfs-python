@@ -2,7 +2,7 @@ import scipy.io
 import numpy as np
 from collections  import OrderedDict
 from generate_CCF import genCCF
-from predict_from_ccf import predictFromCCF
+from predict_from_CCF import predictFromCCF
 from plotting.plot_surface import plotCCFDecisionSurface
 
 # Sample Spital Data Testing script

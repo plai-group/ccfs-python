@@ -11,24 +11,24 @@ def classExpansion(Y, N, optionsFor):
 
     Parameters
     ----------
-    Y = Numpy array
+    Y : Numpy array
         Class information, can be a binary expansion, a numerical
         vector of labels or a cell array of numerical or string
         labels.  For multiple inputs, should instead be a 1xV cell
         array where each cell is of a type required for single input.
-    N = Float
+    N : Float
         Number of datapoints.
-    optionsFor = dict
+    optionsFor: dict
         Forest options
 
     Returns
     -------
-    Y = Numpy array
+    Y:  Numpy array
         Y in binary expansion format
-    classes = float
+    classes:  float
         Names of classes.  In CCT only the class index is stored and
         so this is used to convert to the original name.
-    optionsFor = dict
+    optionsFor: dict
         Updated forest options, e.g. because bSepPred has been
         switched on because non-mutually exclusive classes.
     """

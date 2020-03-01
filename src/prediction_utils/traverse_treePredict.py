@@ -11,40 +11,23 @@ def traverse_tree_predict(tree, X):
     number of rows as X.
     """
     if tree["bLeaf"]:
-        #print('not using')
         leaf_mean = np.multiply(tree["mean"], np.ones((X.shape[0], 1)))
         leaf_node = npmat.repmat(tree, X.shape[0], 1)
 
     else:
-        #print('using')
         if ('rotDetails' in tree.keys()):
-            if not (tree["rotDetails"].size == 0):
-                X = np.subtract(X, tree["rotDetails"]["muX"]) @ tree["rotDetails"]["R"]
+            if not (len(tree["rotDetails"]) == 0):
+                X = np.dot(np.subtract(X, tree["rotDetails"]["muX"]), tree["rotDetails"]["R"])
 
         if ('featureExpansion' in tree.keys()):
             if not (len(tree["featureExpansion"]) == 0):
-                #print('not featureExpansion')
-                #print((tree["featureExpansion"](X[:, tree["iIn"]]).shape))
-                #print(tree["decisionProjection"].shape)
-                #print(tree["paritionPoint"].shape)
-                #print('^^^^^^^^^^^^^^^^^^^^^')
                 bLessChild = np.dot(tree["featureExpansion"](X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
             else:
-                #print('not featureExpansion')
-                #print(X[:, tree["iIn"]].shape)
-                #print(tree["decisionProjection"].shape)
-                #print(tree["paritionPoint"].shape)
-                #print('^^^^^^^^^^^^^^^^^^^^^')
                 bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
         else:
-            #print('usecase-2')
-            #print(tree["decisionProjection"].shape)
-            #print(tree["paritionPoint"].shape)
-            #print(X[:, tree["iIn"]].shape)
-            #print('%%%%%%%%%%%%-2')
             bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
 
-        #print(bLessChild)
+
         leaf_mean =  np.empty((X.shape[0], tree["mean"].size))
         leaf_mean.fill(np.nan)
         node = np.array([{}])
