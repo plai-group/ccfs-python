@@ -26,7 +26,7 @@ def componentAnalysis(X, Y, processes, epsilon):
     # Sample projections to use if some set to be probabilistically used
     bToSample = np.logical_and((probs > 0), (probs < 1))
     if np.any(bToSample):
-        # # TODO: Ignoring for now
+        # TODO: Ignoring for now
         probs[~bToSample] = 0
         cumprobs  = probs.cumsum(axis=0)/np.sum(probs)
         iSampled  = np.sum(np.random.rand() > cumprobs) + 1
@@ -160,8 +160,6 @@ def componentAnalysis(X, Y, processes, epsilon):
                 locyProj = np.linalg.solve(r2, M[:, 0:d] * np.sqrt(x1-1))
             else:
                 locyProj, _, _, _  = np.linalg.lstsq(r2, M[:, 0:d] * np.sqrt(x1-1), rcond=-1)
-            #print('--------locyproj------')
-            #print(locyProj)
             locyProj = amerge(a=locyProj, b=np.concatenate((locyProj, np.zeros((K-rankY, d)))), p=p2)
             yprojMat = np.concatenate((yprojMat, locyProj), axis=1)
 
