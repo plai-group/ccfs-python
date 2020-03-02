@@ -47,9 +47,6 @@ def makeExpansionFunc(wZ, bZ, bIncOrig):
     return f
 
 def calc_mse(cumtotal, cumsq, YTrainSort):
-    # print(cumsq.shape,  sVT(np.arange(YTrainSort.shape[0])).shape)
-    # print(((cumtotal[0:-1, :])**2).shape, np.multiply(2 * cumtotal[0:-1, :], YTrainSort).shape, YTrainSort.shape)
-    # print(sVT(np.arange(YTrainSort.shape[0])**2).shape)
     value = np.divide(cumsq, sVT(np.arange(YTrainSort.shape[0]))) -\
             np.divide(((cumtotal[0:-1, :])**2  + YTrainSort**2 + np.multiply(2 * cumtotal[0:-1, :], YTrainSort)),\
                        sVT(np.arange(YTrainSort.shape[0])**2))

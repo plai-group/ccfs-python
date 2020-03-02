@@ -12,7 +12,7 @@ from src.plotting.plot_surface import plotCCFDecisionSurface
 optionsClassCCF = {}
 optionsClassCCF['lambda']           = 'log'
 optionsClassCCF['splitCriterion']   = 'mse'
-optionsClassCCF['minPointsLeaf']    = 1
+optionsClassCCF['minPointsLeaf']    = 3
 optionsClassCCF['bUseParallel']     = 1
 optionsClassCCF['bCalcTimingStats'] = 1
 optionsClassCCF['bSepPred']         = False
@@ -30,7 +30,7 @@ optionsClassCCF['XVariationTol'] = 1.0e-10
 optionsClassCCF['RotForM']  = 3
 optionsClassCCF['RotForpS'] = 0.7500
 optionsClassCCF['RotForpClassLeaveOut'] = 0.5000
-optionsClassCCF['minPointsForSplit']    = 2
+optionsClassCCF['minPointsForSplit']    = 6
 optionsClassCCF['dirIfEqual'] = 'first'
 optionsClassCCF['bContinueProjBootDegenerate'] = 1
 optionsClassCCF['multiTaskGainCombination'] = 'mean'
