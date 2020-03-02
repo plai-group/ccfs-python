@@ -64,6 +64,6 @@ def rotationForestDataProcess(X, Y, M, prop_points_subsample, prop_classes_elimi
         R[((1+(K)*M)-1):, (iUpTo-1):(iUpTo + r.shape[1] - 1)] = r
 
     R[fOrder, :] = R
-    U = X @ R
+    U = np.dot(X, R)
 
     return R, muX, U
