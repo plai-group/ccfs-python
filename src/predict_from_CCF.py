@@ -1,5 +1,5 @@
 import numpy as np
-from predict_from_cct import predictFromCCT
+from predict_from_CCT import predictFromCCT
 from prediction_utils.replicate_input_process import replicateInputProcess
 from prediction_utils.tree_output_forest_pred import treeOutputsToForestPredicts
 

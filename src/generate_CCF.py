@@ -5,7 +5,7 @@ from utils.commonUtils import is_numeric
 from utils.ccfUtils import pcaLite
 from utils.ccfUtils import randomRotation
 from utils.ccfUtils import random_missing_vals
-from predict_from_cct import predictFromCCT
+from predict_from_CCT import predictFromCCT
 from training_utils.grow_CCT import growCCT
 from training_utils.class_expansion import classExpansion
 from training_utils.process_inputData import processInputData
@@ -42,10 +42,10 @@ def updateForD(optionsFor, D):
     if optionsFor["bBagTrees"] == 'default':
         if int(D) <= optionsFor["lambda"]:
             optionsFor["bBagTrees"] = True
-        else
+        else:
             optionsFor["bBagTrees"] = False
 
-    return optionsfor
+    return optionsFor
 
 
 def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
@@ -210,7 +210,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
         # Process inputs, e.g. converting categoricals and converting to z-scores
         mu_XTrain  = np.nanmean(XTrain, axis=0)
         std_XTrain = np.nanstd(XTrain,  axis=0)
-        inputProcessDetails = {'bOrdinal': np.array([True] * XTrain.shape[1]),'mu_XTrain': mu_XTrain, 'std_XTrain': std_XTrain}
+        inputProcessDetails = {'bOrdinal': np.array([True] * XTrain.shape[1]), 'mu_XTrain': mu_XTrain, 'std_XTrain': std_XTrain}
         inputProcessDetails["Cats"] = np.array([{}])
         XTrain = replicateInputProcess(XTrain, inputProcessDetails)
         if (not (XTest.size == 0)):
@@ -237,7 +237,6 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     else:
         # Center and normalize the outputs for regression for numerical
         # reasons, this is undone in the predictors
-
         muY  = np.mean(YTrain);
         stdY = np.std(YTrain, axis=0)
 
@@ -247,10 +246,10 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
 
         YTrain = np.divide(np.subtract(YTrain, muY), stdY)
 
-        # optionsFor = optionsFor.updateForD(D);
+        optionsFor = updateForD(optionsFor, D)
         optionsFor["org_muY"]  = muY
         optionsFor["org_stdY"] = stdY
-        optionsFor["mseTotal"] = 1
+        optionsFor["mseTotal"] = np.array([1])
 
     # Fill in any unset projection fields and set to false
     projection_fields = ['CCA', 'PCA', 'CCAclasswise', 'Original', 'Random']

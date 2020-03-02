@@ -60,7 +60,7 @@ print(XTrain.shape)
 print(YTrain.shape)
 
 # Call CCF
-CCF = genCCF(XTrain, YTrain, nTrees=200, optionsFor=optionsClassCCF)
+CCF = genCCF(XTrain, YTrain, nTrees=10, optionsFor=optionsClassCCF)
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==(YpredCCF), axis=0))),  '%')
 

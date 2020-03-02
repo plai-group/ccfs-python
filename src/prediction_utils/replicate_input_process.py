@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from utils.commonUtils import is_numeric
 from utils.commonUtils import makeSureString
 
@@ -16,10 +17,10 @@ def replicateInputProcess(Xraw, InputProcessDetails):
         assert (False), 'Incorrect number of features!'
 
     # TODO: Add support for dataframe
-    if isinstance(XTrainRC, pd.DataFrame):
+    if isinstance(Xraw, pd.DataFrame):
         featureNamesOrig = list(XTrainRC.columns.values)
         # Convert to Numpy
-         raise NotImplementedError("To be implemented")
+        raise NotImplementedError("To be implemented")
 
     X = Xraw[:, bOrdinal]
 

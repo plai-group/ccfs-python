@@ -43,7 +43,7 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     if isinstance(XTrainRC, pd.DataFrame):
         featureNamesOrig = list(XTrainRC.columns.values)
         # Convert to Numpy
-         raise NotImplementedError("To be implemented")
+        raise NotImplementedError("To be implemented")
     else:
         featureNamesOrig = np.array(['Var'] * XTrainRC.shape[1])
 

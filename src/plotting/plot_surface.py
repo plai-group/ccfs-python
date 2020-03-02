@@ -5,7 +5,7 @@ import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
-from predict_from_ccf import predictFromCCF
+from predict_from_CCF import predictFromCCF
 from utils.commonUtils import islogical
 
 def plotCCFDecisionSurface(CCF, XTrain, X, Y, nx1Res=200, nx2Res=200, n_contours_or_vals=[]):
@@ -46,11 +46,8 @@ def plotCCFDecisionSurface(CCF, XTrain, X, Y, nx1Res=200, nx2Res=200, n_contours
 
     #fig = plt.figure(1)
     plt.set_cmap(plt.cm.Paired)
-    plt.pcolormesh(x1, x2, numericPreds)
-    # print(n_contours_or_vals)
-    #cf = plt.contourf(x1, x2, numericPreds, levels=n_contours_or_vals, colors=('r', 'g', 'b'))
-    #cf.cmap.set_under('red')
-    #cf.cmap.set_over('blue')
+    plt.pcolormesh(x2, x1, numericPreds)
+    #print(n_contours_or_vals)
     for k in range(np.max(Y)):
         plt.scatter(X[np.squeeze(Y==k), 0], X[np.squeeze(Y==k), 1], c=colors[k], marker=markers[k])
     plt.savefig("spiral_contour.svg", dpi=150)

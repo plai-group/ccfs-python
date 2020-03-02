@@ -25,11 +25,18 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
         else:
             # Check if task_ids is single number
             if type(CCF["options"]["task_ids"]) == int:
-                task_ids_size = 1
-                forestPredicts = np.empty((forestProbs.shape[0], task_ids_size))
-                forestPredicts.fill(np.nan)
-
-                forestPredicts[:, 0] = np.argmax(forestProbs, axis=1)
+                if CCF["options"]["task_ids"] == 1:
+                    task_ids_size  = 1
+                    forestPredicts = np.empty((forestProbs.shape[0], task_ids_size))
+                    forestPredicts.fill(np.nan)
+                    forestPredicts[:, 0] = np.argmax(forestProbs, axis=1)
+                else:
+                    task_ids_size  = 1
+                    forestPredicts = np.empty((forestProbs.shape[0], task_ids_size))
+                    forestPredicts.fill(np.nan)
+                    for nO in range ((task_ids_size)-1):
+                        forestPredicts[:, nO] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:(CCF["options"]["task_ids"]+1)-1], axis=1)
+                    forestPredicts[:, -1] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:], axis=1)
             else:
                 forestPredicts = np.empty((forestProbs.shape[0], CCF["options"]["task_ids"].size))
                 forestPredicts.fill(np.nan)

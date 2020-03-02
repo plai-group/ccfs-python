@@ -13,7 +13,7 @@ from utils.ccfUtils import genFeatureExpansionParameters
 from training_utils.component_analysis import componentAnalysis
 from training_utils.twopoint_max_marginsplit import twoPointMaxMarginSplit
 warnings.filterwarnings('ignore')
-
+import pdb
 import logging
 logger  = logging.getLogger(__name__)
 
@@ -47,6 +47,9 @@ def makeExpansionFunc(wZ, bZ, bIncOrig):
     return f
 
 def calc_mse(cumtotal, cumsq, YTrainSort):
+    # print(cumsq.shape,  sVT(np.arange(YTrainSort.shape[0])).shape)
+    # print(((cumtotal[0:-1, :])**2).shape, np.multiply(2 * cumtotal[0:-1, :], YTrainSort).shape, YTrainSort.shape)
+    # print(sVT(np.arange(YTrainSort.shape[0])**2).shape)
     value = np.divide(cumsq, sVT(np.arange(YTrainSort.shape[0]))) -\
             np.divide(((cumtotal[0:-1, :])**2  + YTrainSort**2 + np.multiply(2 * cumtotal[0:-1, :], YTrainSort)),\
                        sVT(np.arange(YTrainSort.shape[0])**2))
@@ -126,8 +129,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     #---------------------------------------------------------------------------
     iCanBeSelected = fastUnique(X=iFeatureNum)
     iCanBeSelected[np.isnan(iCanBeSelected)] = np.array([])
+    print('print-------', options["lambda"], iCanBeSelected.size)
     lambda_   = np.min((iCanBeSelected.size, options["lambda"]))
-    indFeatIn = np.random.choice(iCanBeSelected.size, lambda_, replace=False)
+    indFeatIn = np.random.choice(int(iCanBeSelected.size), int(lambda_), replace=False)
     iFeatIn   = iCanBeSelected[indFeatIn]
 
     bInMat = np.equal(sVT(X=iFeatureNum.flatten(order='F')), np.sort(iFeatIn.flatten(order='F')))
@@ -291,16 +295,16 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                     # Need to do grouped sums for each of the outputs as will be
                     # doing more than a simple averaging of there values
                    metricLeft = np.cumsum(lTerm, axis=1)
-                   taskidxs_L = np.array([options["task_ids"][1:] - 1), np.array([-1]]))
+                   taskidxs_L = np.array([(options["task_ids"][1:] - 1), np.array([-1])])
                    metricLeft = metricLeft[:, taskidxs_L] - np.concatenate((np.zeros((metricLeft.shape[0], 1)), metricLeft[:, (options["task_ids"][1:] - 1)]))
 
                    metricRight = np.cumsum(rTerm, axis=1)
-                   taskidxs_R  = np.concatenate(((options["task_ids"][1:] - 1), np.array([-1])))
+                   taskidxs_R  = np.array([(options["task_ids"][1:] - 1), np.array([-1])])
                    metricRight = metricRight[:, taskidxs_R] - np.concatenate((np.zeros((metricRight.shape[0], 1)), metricRight[:, (options["task_ids"][1:] - 1)]))
             else:
                 if options["splitCriterion"] == 'mse':
-                    cumSqLeft = np.cumsum(VTrainSort**2)
-                    varData   = np.subtract((cumSqLeft[-1,:]/N), ((leftCum[-1, :]/N)**2))
+                    cumSqLeft = (VTrainSort**2).cumsum(axis=0)
+                    varData   = (cumSqLeft[-1,:]/N) - (leftCum[-1, :]/N)**2
                     if np.all(varData < (options["mseTotal"] * options["mseErrorTolerance"])):
                         # Total variation is less then the allowed tolerance so
                         # terminate and construct a leaf
@@ -308,10 +312,23 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                         return tree
                     cumtotal_l = np.concatenate((np.zeros((1, VTrainSort.shape[1])), leftCum))
                     metricLeft = calc_mse(cumtotal=cumtotal_l, cumsq=cumSqLeft, YTrainSort=VTrainSort)
+                    metricLeft[np.isnan(metricLeft)] = 0.0
                     # For calculating the right need to go in additive order again
                     # so go from other end and then flip
-                    metricRight = np.concatenate((np.zeros((1, VTrainSort.shape[1])), calc_mse(rightCum[-1::-1, :], np.subtract(cumSqLeft[-1, :], cumSqLeft[-2::-1, :]), VTrainSort[-1:0:-1, :])))
-                    metricRight = metricRight[-1:0:-1, :]
+                    end  = cumSqLeft.shape[0]  - 1
+                    vend = VTrainSort.shape[0] - 1
+                    # print(rightCum[::-1, :].shape)
+                    # print(cumSqLeft[-1, :].shape, cumSqLeft[(end-1)::-1, :].shape)
+                    # print(VTrainSort[vend:0:-1, :].shape)
+                    # print()
+                    metricRight = np.concatenate((np.zeros((1, VTrainSort.shape[1])),\
+                                  calc_mse(rightCum[::-1, :],\
+                                           np.subtract(cumSqLeft[-1, :], cumSqLeft[(end-1)::-1, :]),\
+                                           VTrainSort[vend:0:-1, :])))
+                    metricRight[np.isnan(metricRight)] = 0.0
+                    print(metricRight[0:20])
+                    print(metricRight.shape)
+                    metricRight = metricRight[::-1, :]
                     # No need to do the grouping for regression as each must be
                     # a seperate output anyway.
                 else:
@@ -320,14 +337,31 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             metricCurrent = metricLeft[-1]
             metricLeft[~bUniquePoints]  = np.inf
             metricRight[~bUniquePoints] = np.inf
-
+            print(metricLeft[0:50])
+            print(metricRight[0:50])
+            # print(bUniquePoints)
             # Calculate gain in metric for each of possible splits based on current
             # metric value minus metric value of child weighted by number of terms
             # in each child
-            metricGain = np.subtract(metricCurrent,\
-                         np.add(np.multiply(np.arange(1,N+1, 1), metricLeft),\
-                                np.multiply(np.arange(N-1, -1, -1), metricRight))/N)
-            metricGain = metricGain
+            # print(np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)[0:50])
+            # print(np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft).shape)
+            # print('------------')
+            # print(np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight)[0:50])
+            # print(np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight).shape)
+            # print(metricCurrent)
+            # print(((np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
+            #      + np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight))/N)[0:10])
+            # print(N)
+
+            if not bReg:
+                metricGain = np.subtract(metricCurrent,\
+                      np.add(np.multiply(np.arange(1,N+1, 1), metricLeft),\
+                             np.multiply(np.arange(N-1, -1, -1), metricRight))/N)
+            else:
+                metricGain = np.subtract(metricCurrent,\
+                         ( np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
+                         + np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight))/N)
+            print(metricGain.shape)
 
             # Combine gains if there are mulitple outputs.  Note that for gini,
             # info and mse, the joint gain is equal to the mean gain, hence
@@ -355,6 +389,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])
             splitGains[nVarAtt] = np.max(metricGain[0:-1])
             iEqualMax = ((np.absolute(metricGain[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero())[0]
+            print('RRRR', iEqualMax)
             if iEqualMax.size == 0:
                 iEqualMax = np.array([1])
             iSplits[nVarAtt] = iEqualMax[np.random.randint(iEqualMax.size)]
@@ -366,17 +401,22 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
         # Establish between projection direction
         maxGain   = np.max(splitGains, axis=0)
+        print(maxGain)
         iEqualMax = ((np.absolute(splitGains - maxGain) < (10 * eps)).ravel().nonzero())[0]
-
+        print(iEqualMax)
+        print(options["dirIfEqual"])
         # Use given method to break ties
         if options["dirIfEqual"] == 'rand':
             iDir = iEqualMax[np.random.randint(iEqualMax.size)]
         elif options["dirIfEqual"] == 'first':
-            iDir = iEqualMax[0]
+            print(iEqualMax)
+            if iEqualMax.size == 0:
+                iDir = 0
+            else:
+                iDir = iEqualMax[0]
         else:
             assert (False), 'invalid dirIfEqual!'
         iSplit = iSplits[iDir].astype(int)
-
         #-----------------------------------------------------------------------
         # Establish partition point and assign to child
         #-----------------------------------------------------------------------
