@@ -1,9 +1,9 @@
 import scipy.io
 import numpy as np
 from collections  import OrderedDict
-from generate_CCF import genCCF
-from predict_from_CCF import predictFromCCF
-from plotting.plot_surface import plotCCFDecisionSurface
+from src.generate_CCF import genCCF
+from src.predict_from_CCF import predictFromCCF
+from src.plotting.plot_surface import plotCCFDecisionSurface
 
 # Sample Spital Data Testing script
 
@@ -11,7 +11,7 @@ from plotting.plot_surface import plotCCFDecisionSurface
 # Default HyperParams
 optionsClassCCF = {}
 optionsClassCCF['lambda']           = 'log'
-optionsClassCCF['splitCriterion']   = 'info'
+optionsClassCCF['splitCriterion']   = 'mse'
 optionsClassCCF['minPointsLeaf']    = 1
 optionsClassCCF['bUseParallel']     = 1
 optionsClassCCF['bCalcTimingStats'] = 1
@@ -47,35 +47,24 @@ optionsClassCCF['org_stdY']   = np.array([])
 optionsClassCCF['mseTotal']   = np.array([])
 optionsClassCCF['task_ids']   = np.array([])
 
-# print(optionsClassCCF)
 
-
+#-------------------------------------------------------------------------------
 # Load data
-Tdata  = scipy.io.loadmat('./data_test/data.mat')
+Tdata  = scipy.io.loadmat('./datatest/camel6.mat')
 XTrain = Tdata['XTrain']
 YTrain = Tdata['YTrain']
 XTest  = Tdata['XTest']
 YTest  = Tdata['YTest']
-print(XTrain.shape)
-print(YTrain.shape)
+print('Dataset Loaded!')
 
 # Call CCF
-CCF = genCCF(XTrain, YTrain, nTrees=10, optionsFor=optionsClassCCF)
+print('CCF.......')
+CCF = genCCF(XTrain, YTrain, nTrees=10, bReg=True, optionsFor=optionsClassCCF)
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
-print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==(YpredCCF), axis=0))),  '%')
+print('CCF Mean squared error (lower better): ', (np.mean((YpredCCF - YTest)**2)))
 
+#-------------------------------------------------------------------------------
 # Plotting
-plotCCFDecisionSurface(CCF, XTrain, X=XTest, Y=YTest)
-
-
-
-
-# XTrain1 = XTrain[0:500, :]
-# YTrain1 = YTrain[0:500, :]
-# XTest1  = XTrain[109:120, :]
-# YTest1  = YTrain[109:120, :]
-#
-# CCF = genCCF(XTrain1, YTrain1,  nTrees=100, optionsFor=optionsClassCCF)
-# YpredCCF, _, _ = predictFromCCF(CCF, XTest1)
-#
-# print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest1==(YpredCCF)))),  '%')
+x1Lims = [-1.15, 1.15]
+x2Lims = [-1.75, 1.75]
+plotCCFDecisionSurface("camel_contour.svg", CCF, x1Lims, x2Lims, XTrain, X=XTest, Y=YTest, plot_X=False)

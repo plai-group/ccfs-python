@@ -8,10 +8,7 @@ import matplotlib.tri as tri
 from predict_from_CCF import predictFromCCF
 from utils.commonUtils import islogical
 
-def plotCCFDecisionSurface(CCF, XTrain, X, Y, nx1Res=200, nx2Res=200, n_contours_or_vals=[]):
-    x1Lims = [np.round(np.min(XTrain[:, 0])-1), np.round(np.max(XTrain[:, 0])+1)]
-    x2Lims = [np.round(np.min(XTrain[:, 1])-1), np.round(np.max(XTrain[:, 1])+1)]
-
+def plotCCFDecisionSurface(name, CCF, x1Lims, x2Lims, XTrain, X, Y, nx1Res=200, nx2Res=200, n_contours_or_vals=[], plot_X=True):
     xi = np.linspace(x1Lims[0], x1Lims[1], nx1Res)
     yi = np.linspace(x2Lims[0], x2Lims[1], nx2Res)
     x1, x2 = np.meshgrid(xi, yi)
@@ -27,7 +24,6 @@ def plotCCFDecisionSurface(CCF, XTrain, X, Y, nx1Res=200, nx2Res=200, n_contours
     numericPreds.fill(np.nan)
     numericPreds = preds
     numericPreds = np.reshape(numericPreds, (x2.shape))
-    #print(nVals)
 
     if len(n_contours_or_vals) == 0:
         if nVals >= (preds.shape[0])/2:
@@ -38,33 +34,20 @@ def plotCCFDecisionSurface(CCF, XTrain, X, Y, nx1Res=200, nx2Res=200, n_contours
 
     colors  = ['c', 'm', 'k', 'y']
     markers = ['x', '+', 'o', '*']
+
     # Plot Classes
     if Y.shape[1] != 1:
         Y = np.sum(np.multiply(Y, np.arange(0, Y.shape[1])), axis=1)
     elif islogical(Y):
         Y = Y + 1
 
-    #fig = plt.figure(1)
     plt.set_cmap(plt.cm.Paired)
     plt.pcolormesh(x2, x1, numericPreds)
-    #print(n_contours_or_vals)
-    for k in range(np.max(Y)):
-        plt.scatter(X[np.squeeze(Y==k), 0], X[np.squeeze(Y==k), 1], c=colors[k], marker=markers[k])
-    plt.savefig("spiral_contour.svg", dpi=150)
+
+    if plot_X:
+        for k in range(np.max(Y)):
+            plt.scatter(X[np.squeeze(Y==k), 0], X[np.squeeze(Y==k), 1], c=colors[k], marker=markers[k])
+
+    plt.savefig(name, dpi=150)
 
     return None
-
-
-
-# if __name__ == "__main__":
-#     Tdata  = scipy.io.loadmat('/ccfs-python/src/data_test/data.mat')
-#     XTrain = Tdata['XTrain']
-#     YTrain = Tdata['YTrain']
-#     XTest  = Tdata['XTest']
-#     YTest  = Tdata['YTest']
-#     print(XTrain.shape)
-#     print(YTrain.shape)
-#
-#     #CCF = np.load('/ccfs-python/src/CCF_spiral.npy', allow_pickle=True)
-#     #print(CCF)
-#     plotCCFDecisionSurface(None, XTrain)
