@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-from utils.commonUtils import sVT
-from utils.commonUtils import is_numeric
-from prediction_utils.replicate_input_process import replicateInputProcess
+from src.utils.commonUtils import sVT
+from src.utils.commonUtils import is_numeric
+from src.prediction_utils.replicate_input_process import replicateInputProcess
 
 def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     """

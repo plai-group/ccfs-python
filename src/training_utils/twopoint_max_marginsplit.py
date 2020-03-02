@@ -7,11 +7,8 @@ def twoPointMaxMarginSplit(X, Y, tol):
     produces the optimal split
     """
     bType1 = np.all(np.absolute(np.subtract(X, X[0,:])) < tol, axis=1)
-    #print('bytpe', bType1)
     YLeft  = Y[bType1,:]
     YRight = Y[~bType1,:]
-    #print(YLeft)
-    #print(YRight)
 
     if np.all(YLeft.sum(axis=0) ==  YRight.sum(axis=0)):
         # Here the two unique points are identical and so we can't helpfully split
@@ -26,10 +23,7 @@ def twoPointMaxMarginSplit(X, Y, tol):
     # to the vector between the two points (rmm) and the maximal
     # marginal split point (cmm) is halway between the two points on this line.
     iType2 = (~bType1).ravel().nonzero()[0][0]
-    #print('itype')
-    #print(iType2)
     rmm    = (X[iType2,:] - X[0,:]).T
-    #print(rmm.shape)
     cmm    = 0.5 * np.add(np.dot(X[iType2,:], rmm), np.dot(X[0,:], rmm))
 
     if np.any(np.isnan(cmm)) or np.any(np.isinf(cmm)):

@@ -1,5 +1,5 @@
 from src.predict_from_cct import predictFromCCT
-from utils.ccfUtils import random_missing_vals
+from src.utils.ccfUtils import random_missing_vals
 
 
 def randperm_preds(tree, X, bOutOfBag=None):

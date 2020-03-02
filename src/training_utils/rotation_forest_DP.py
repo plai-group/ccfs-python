@@ -1,7 +1,7 @@
 import numpy as np
-from utils.commonUtils import sVT
-from utils.ccfUtils import pcaLite
-from utils.ccfUtils import manyRandPerms
+from src.utils.commonUtils import sVT
+from src.utils.ccfUtils import pcaLite
+from src.utils.ccfUtils import manyRandPerms
 
 def localRotation(x, p):
     iB = np.random.choice((np.arange(0, x.shape[0])), round(x.shape[0] * p))

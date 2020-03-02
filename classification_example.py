@@ -51,7 +51,7 @@ optionsClassCCF['task_ids']   = np.array([])
 
 #-------------------------------------------------------------------------------
 # Load data
-Tdata  = scipy.io.loadmat('./datatest/spiral.mat')
+Tdata  = scipy.io.loadmat('/ccfs-python/dataset/spiral.mat')
 XTrain = Tdata['XTrain']
 YTrain = Tdata['YTrain']
 XTest  = Tdata['XTest']
@@ -60,7 +60,7 @@ print('Dataset Loaded!')
 
 # Call CCF
 print('CCF.......')
-CCF = genCCF(XTrain, YTrain, nTrees=10, optionsFor=optionsClassCCF)
+CCF = genCCF(XTrain, YTrain, nTrees=200, optionsFor=optionsClassCCF)
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==(YpredCCF), axis=0))),  '%')
 

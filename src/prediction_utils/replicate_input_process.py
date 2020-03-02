@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from utils.commonUtils import is_numeric
-from utils.commonUtils import makeSureString
+from src.utils.commonUtils import is_numeric
+from src.utils.commonUtils import makeSureString
 
 def replicateInputProcess(Xraw, InputProcessDetails):
     """

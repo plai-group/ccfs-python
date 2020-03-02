@@ -2,16 +2,16 @@ import inspect
 import warnings
 import scipy.io
 import numpy as np
-from utils.commonUtils import sVT
-from utils.commonUtils import is_numeric
-from utils.commonUtils import fastUnique
-from utils.commonUtils import queryIfColumnsVary
-from utils.commonUtils import queryIfOnlyTwoUniqueRows
-from utils.ccfUtils import regCCA_alt
-from utils.ccfUtils import random_feature_expansion
-from utils.ccfUtils import genFeatureExpansionParameters
-from training_utils.component_analysis import componentAnalysis
-from training_utils.twopoint_max_marginsplit import twoPointMaxMarginSplit
+from src.utils.commonUtils import sVT
+from src.utils.commonUtils import is_numeric
+from src.utils.commonUtils import fastUnique
+from src.utils.commonUtils import queryIfColumnsVary
+from src.utils.commonUtils import queryIfOnlyTwoUniqueRows
+from src.utils.ccfUtils import regCCA_alt
+from src.utils.ccfUtils import random_feature_expansion
+from src.utils.ccfUtils import genFeatureExpansionParameters
+from src.training_utils.component_analysis import componentAnalysis
+from src.training_utils.twopoint_max_marginsplit import twoPointMaxMarginSplit
 warnings.filterwarnings('ignore')
 import pdb
 import logging

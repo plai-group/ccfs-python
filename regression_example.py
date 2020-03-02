@@ -50,7 +50,7 @@ optionsClassCCF['task_ids']   = np.array([])
 
 #-------------------------------------------------------------------------------
 # Load data
-Tdata  = scipy.io.loadmat('./datatest/camel6.mat')
+Tdata  = scipy.io.loadmat('/ccfs-python/dataset/camel6.mat')
 XTrain = Tdata['XTrain']
 YTrain = Tdata['YTrain']
 XTest  = Tdata['XTest']
@@ -59,7 +59,7 @@ print('Dataset Loaded!')
 
 # Call CCF
 print('CCF.......')
-CCF = genCCF(XTrain, YTrain, nTrees=10, bReg=True, optionsFor=optionsClassCCF)
+CCF = genCCF(XTrain, YTrain, nTrees=200, bReg=True, optionsFor=optionsClassCCF)
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 print('CCF Mean squared error (lower better): ', (np.mean((YpredCCF - YTest)**2)))
 

@@ -1,7 +1,7 @@
 import numpy as np
-from utils.ccfUtils import mat_unique
-from utils.commonUtils import sVT
-from utils.commonUtils import islogical
+from src.utils.ccfUtils import mat_unique
+from src.utils.commonUtils import sVT
+from src.utils.commonUtils import islogical
 
 import logging
 logger  = logging.getLogger(__name__)
