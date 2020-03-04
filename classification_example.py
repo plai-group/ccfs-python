@@ -60,13 +60,13 @@ print('Dataset Loaded!')
 
 # Call CCF
 print('CCF.......')
-CCF = genCCF(XTrain, YTrain, nTrees=200, optionsFor=optionsClassCCF)
+CCF = genCCF(XTrain, YTrain, nTrees=100, optionsFor=optionsClassCCF)
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==(YpredCCF), axis=0))),  '%')
 
 #-------------------------------------------------------------------------------
 # Plotting
-x1Lims = [np.round(np.min(XTrain[:, 0])-1), np.round(np.max(XTrain[:, 0])+1)]
-x2Lims = [np.round(np.min(XTrain[:, 1])-1), np.round(np.max(XTrain[:, 1])+1)]
+x1Lims = [np.round(np.min(XTrain[:, 0])-1), np.round(np.max(XTrain[:, 0])+2)]
+x2Lims = [np.round(np.min(XTrain[:, 1])-1), np.round(np.max(XTrain[:, 1])+2)]
 
 plotCCFDecisionSurface("spiral_contour.svg", CCF, x1Lims, x2Lims, XTrain, X=XTest, Y=YTest)

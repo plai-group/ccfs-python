@@ -280,8 +280,8 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 if (YTrain.shape[1] == 1) or options["bSepPred"]:
                     # Add grouped terms back together
                     end   = YTrain.shape[1]
-                    lTerm = lTerm[:, 0:end//2] + lTerm[:, end//2:]
-                    rTerm = rTerm[:, 0:end//2] + rTerm[:, end//2:]
+                    lTerm = np.add(lTerm[:, 0:end//2], lTerm[:, end//2:])
+                    rTerm = np.add(rTerm[:, 0:end//2], rTerm[:, end//2:])
 
                 if (not is_numeric(options["taskWeights"])) and (not options["multiTaskGainCombination"] == 'max'):
                     # No need to do anything fancy in the metric calculation
@@ -300,7 +300,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             else:
                 if options["splitCriterion"] == 'mse':
                     cumSqLeft = (VTrainSort**2).cumsum(axis=0)
-                    varData   = (cumSqLeft[-1,:]/N) - (leftCum[-1, :]/N)**2
+                    varData   = np.subtract((cumSqLeft[-1,:]/N), (leftCum[-1, :]/N)**2)
                     if np.all(varData < (options["mseTotal"] * options["mseErrorTolerance"])):
                         # Total variation is less then the allowed tolerance so
                         # terminate and construct a leaf
@@ -337,7 +337,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                              np.multiply(np.arange(N-1, -1, -1), metricRight))/N)
             else:
                 metricGain = np.subtract(metricCurrent,\
-                         ( np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
+                         (np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
                          + np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight))/N)
 
             # Combine gains if there are mulitple outputs.  Note that for gini,
@@ -347,7 +347,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 if metricGain.shape[1] > 1:
                     if is_numeric(options["taskWeights"]):
                         # If weights provided, weight task appropriately in terms of importance.
-                        metricGain = np.multiply(metricGain, X=options["taskWeights"].flatten(order='F'))
+                        metricGain = np.multiply(metricGain, X=sVT(options["taskWeights"].flatten(order='F')))
 
                     multiTGC = options["multiTaskGainCombination"]
                     if multiTGC == 'mean':
@@ -359,8 +359,8 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
             # Disallow splits that violate the minimum number of leaf points
             end = (metricGain.shape[0]-1)
-            metricGain[0:(options["minPointsLeaf"]-1)] = -np.inf;
-            metricGain[(end-(options["minPointsLeaf"]-1)):] = -np.inf; # Note that end is never chosen anyway
+            metricGain[0:(options["minPointsLeaf"]-1)] = -np.inf
+            metricGain[(end-(options["minPointsLeaf"]-1)):] = -np.inf # Note that end is never chosen anyway
 
             # Randomly sample from equally best splits
             iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])

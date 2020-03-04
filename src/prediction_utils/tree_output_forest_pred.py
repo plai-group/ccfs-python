@@ -34,13 +34,13 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
                     task_ids_size  = 1
                     forestPredicts = np.empty((forestProbs.shape[0], task_ids_size))
                     forestPredicts.fill(np.nan)
-                    for nO in range ((task_ids_size)-1):
+                    for nO in range((task_ids_size)-1):
                         forestPredicts[:, nO] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:(CCF["options"]["task_ids"]+1)-1], axis=1)
                     forestPredicts[:, -1] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:], axis=1)
             else:
                 forestPredicts = np.empty((forestProbs.shape[0], CCF["options"]["task_ids"].size))
                 forestPredicts.fill(np.nan)
-                for nO in range ((CCF["options"]["task_ids"].size)-1):
+                for nO in range((CCF["options"]["task_ids"].size)-1):
                     forestPredicts[:, nO] = np.argmax(forestProbs[:, CCF["options"]["task_ids"][nO]:(CCF["options"]["task_ids"][nO+1]-1)], axis=1)
                 forestPredicts[:, -1] = np.argmax(forestProbs[:, CCF["options"]["task_ids"][-1]:], axis=1)
             # Convert to type int
@@ -54,8 +54,12 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
             else:
                 forestPredicts = CCF["classNames"][forestPredicts]
 
-        # Fix needed -- Support for cell array
+        # Fix needed -- Support for DataFrame
         elif isinstance(CCF["classNames"], pd.DataFrame):
             assert (CCF["classNames"].size == forestPredicts.shape[1]), 'Number of predicts does not match the number of outputs in classNames'
+
+        elif islogical(CCF["classNames"]) and CCF["classNames"].size:
+            forestPredicts = (forestPredicts == 2)
+
 
     return forestPredicts, forestProbs

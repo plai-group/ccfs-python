@@ -98,7 +98,7 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
         tree["predictsOutOfBag"], _ = predictFromCCT(tree, XTrainOrig[iOob, :])
 
     # Store rotation deatils if necessary
-    if (not optionsFor["treeRotation"] == None):
+    if not (optionsFor["treeRotation"] == None):
         tree["rotDetails"] = {'R': R, 'muX': muX}
 
     return tree
@@ -209,7 +209,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     else:
         # Process inputs, e.g. converting categoricals and converting to z-scores
         mu_XTrain  = np.nanmean(XTrain, axis=0)
-        std_XTrain = np.nanstd(XTrain,  axis=0)
+        std_XTrain = np.nanstd(XTrain,  axis=0, ddof=1)
         inputProcessDetails = {'bOrdinal': np.array([True] * XTrain.shape[1]), 'mu_XTrain': mu_XTrain, 'std_XTrain': std_XTrain}
         inputProcessDetails["Cats"] = np.array([{}])
         XTrain = replicateInputProcess(XTrain, inputProcessDetails)
@@ -237,8 +237,8 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     else:
         # Center and normalize the outputs for regression for numerical
         # reasons, this is undone in the predictors
-        muY  = np.mean(YTrain);
-        stdY = np.std(YTrain, axis=0)
+        muY  = np.mean(YTrain)
+        stdY = np.std(YTrain, axis=0, ddof=1)
 
         # For now just set stdY to be 1 instead of zero to prevent NaNs if a
         # dimensions has no variation.

@@ -39,8 +39,8 @@ def predictFromCCF(CCF, X):
     nTrees = len(CCF["Trees"])
 
     # Preallocate output space
-    pcctx0 = predictFromCCT(CCF["Trees"][0], X)[0]
-    pcctx0 = np.expand_dims(pcctx0, axis=1)
+    pcctx0, _ = predictFromCCT(CCF["Trees"][0], X)
+    pcctx0    = np.expand_dims(pcctx0, axis=1)
     treeOutputs = np.tile(pcctx0, [1, nTrees, 1])
 
     for n in range(1, nTrees):

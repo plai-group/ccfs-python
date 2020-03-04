@@ -194,4 +194,3 @@ def componentAnalysis(X, Y, processes, epsilon):
     B[bYvaries, :] = yprojMat
 
     return A, B, U, V, r
-
