@@ -5,7 +5,7 @@ from src.generate_CCF import genCCF
 from src.predict_from_CCF import predictFromCCF
 from src.plotting.plot_surface import plotCCFDecisionSurface
 
-# Sample Spital Data Testing script
+# Sample Camel6 Data Testing script
 
 # ----------------------Use optionsClassCCF---------------------------------#
 # Default HyperParams
