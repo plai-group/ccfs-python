@@ -14,7 +14,7 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
                   in doc string of predictCCF as it is provided as an output.
     """
     if CCF["bReg"]:
-        forestPredicts = np.squeeze(np.mean(treeOutputs, axis=1))
+        forestPredicts = np.mean(treeOutputs, axis=1)
         forestProbs = []
     else:
         forestProbs = np.squeeze(np.mean(treeOutputs, axis=1))
@@ -34,13 +34,13 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
                     task_ids_size  = 1
                     forestPredicts = np.empty((forestProbs.shape[0], task_ids_size))
                     forestPredicts.fill(np.nan)
-                    for nO in range((task_ids_size)-1):
+                    for nO in range((task_ids_size)-2):
                         forestPredicts[:, nO] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:(CCF["options"]["task_ids"]+1)-1], axis=1)
                     forestPredicts[:, -1] = np.argmax(forestProbs[:, CCF["options"]["task_ids"]:], axis=1)
             else:
                 forestPredicts = np.empty((forestProbs.shape[0], CCF["options"]["task_ids"].size))
                 forestPredicts.fill(np.nan)
-                for nO in range((CCF["options"]["task_ids"].size)-1):
+                for nO in range((CCF["options"]["task_ids"].size)-2):
                     forestPredicts[:, nO] = np.argmax(forestProbs[:, CCF["options"]["task_ids"][nO]:(CCF["options"]["task_ids"][nO+1]-1)], axis=1)
                 forestPredicts[:, -1] = np.argmax(forestProbs[:, CCF["options"]["task_ids"][-1]:], axis=1)
             # Convert to type int

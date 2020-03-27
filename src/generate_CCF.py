@@ -1,4 +1,5 @@
 import numpy as np
+import multiprocessing as mp
 from collections import OrderedDict
 from src.utils.commonUtils import fastUnique
 from src.utils.commonUtils import is_numeric
@@ -104,7 +105,64 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
     return tree
 
 
-def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bKeepTrees=True, iFeatureNum=None, bOrdinal=None):
+def genTree_parallel(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain, pos):
+    """
+    A sub-function is used so that it can be shared between the for and
+    parfor loops.  Does required preprocessing such as randomly setting
+    missing values, then calls the tree training function
+    """
+    if optionsFor["missingValuesMethod"] == 'random':
+        # Randomly set the missing values.  This will be different for each tree
+        XTrain = random_missing_vals(XTrain)
+
+    N = XTrain.shape[0]
+
+    # Bag if required
+    if optionsFor["bBagTrees"] or (Ntrain != N):
+        #print()
+        all_samples = np.arange(N)
+        iTrainThis  = np.random.choice(all_samples, Ntrain, replace=optionsFor["bBagTrees"])
+        iOob        = np.setdiff1d(all_samples, iTrainThis).T
+        XTrainOrig  = XTrain
+        XTrain      = XTrain[iTrainThis, :]
+        YTrain      = YTrain[iTrainThis, :]
+
+    # Apply pre rotations if any requested.  Note that these all include a
+    # subtracting a the mean prior to the projection (because this is a natural
+    # part of pca) and this is therefore replicated at test time
+    if optionsFor["treeRotation"] == 'rotationForest':
+        # This allows functionality to use the Rotation Forest algorithm as a
+        # meta method for individual CCTs
+        prop_classes_eliminate = optionsFor["RotForpClassLeaveOut"]
+        if bReg:
+            prop_classes_eliminate = 0
+        R, muX, XTrain = rotationForestDataProcess(XTrain, YTrain, optionsFor["RotForM"], optionsFor["RotForpS"], prop_classes_eliminate)
+
+    elif optionsFor["treeRotation"] == 'random':
+        muX = np.nanmean(XTrain, axis=0)
+        R   = randomRotation(N=XTrain.shape[1])
+        XTrain = np.dot(np.subtract(XTrain, muX), R)
+
+    elif optionsFor["treeRotation"] == 'pca':
+        R, muX, XTrain = pcaLite(XTrain, False, False)
+
+    # Train the tree
+    tree = growCCT(XTrain, YTrain, bReg, optionsFor, iFeatureNum, 0)
+
+    # Calculate out of bag error if relevant
+    if optionsFor["bBagTrees"]:
+        tree["iOutOfBag"] = iOob
+        tree["predictsOutOfBag"], _ = predictFromCCT(tree, XTrainOrig[iOob, :])
+
+    # Store rotation deatils if necessary
+    if not (optionsFor["treeRotation"] == None):
+        tree["rotDetails"] = {'R': R, 'muX': muX}
+
+    return (pos, tree)
+
+
+
+def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=False, XTest=None, bKeepTrees=True, iFeatureNum=None, bOrdinal=None):
     """
     Creates a canonical correlation forest (CCF) comprising of nTrees
     canonical correlation trees (CCT) containing splits based on the a CCA
@@ -249,7 +307,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
         optionsFor = updateForD(optionsFor, D)
         optionsFor["org_muY"]  = muY
         optionsFor["org_stdY"] = stdY
-        optionsFor["mseTotal"] = np.array([1])
+        optionsFor["mseTotal"] = np.array(1)
 
     # Fill in any unset projection fields and set to false
     projection_fields = ['CCA', 'PCA', 'CCAclasswise', 'Original', 'Random']
@@ -267,10 +325,9 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
         XTest.fill(np.nan)
 
     forest = OrderedDict()
+
     treeOutputTest = np.empty((XTest.shape[0], nTrees, YTrain.shape[1]))
     treeOutputTest.fill(np.nan)
-
-
     n_nodes_trees = np.empty((nTrees, 1))
     n_nodes_trees.fill(np.nan)
     tree_train_times = np.empty((nTrees, 1))
@@ -281,16 +338,29 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
     Ntrain = int(N * optionsFor["propTrain"])
 
     # Train the trees
-    # TODO: Add parallel support
-    for nT in range(nTrees):
-        # Generate tree
-        tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
+    if do_parallel:
+        pool = mp.Pool(processes=mp.cpu_count())
+        processes = [pool.apply_async(genTree_parallel, args=(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain, n_i)) for n_i in range(nTrees)]
 
-        if bKeepTrees:
-            forest[nT] = tree
+        # Get process results
+        all_trees = [p.get() for p in processes]
+        all_trees.sort() # Sort the results by pos
 
-        if nT%25 == 0:
-            print('Progress: {}/{}'.format(nT, nTrees))
+        # Collect
+        for nT in range(nTrees):
+            if bKeepTrees:
+                forest[nT] = all_trees[nT][1]
+
+    else:
+        for nT in range(nTrees):
+            # Generate tree
+            tree = genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain)
+
+            if bKeepTrees:
+                forest[nT] = tree
+
+            if nT%25 == 0:
+                print('Progress: {}/{}'.format(nT, nTrees))
 
     print('Completed')
     print('..................................................................')
@@ -323,18 +393,15 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, XTest=None, bK
                 forPreds.fill(np.nan)
                 YTrainCollapsed = np.empty((XTrain.shape[0], 1))
                 YTrainCollapsed.fill(np.nan)
-                for nO in range(0):
-                    forPreds[:, nO]        = np.argmax(oobPreds[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"]-1], axis=1)
-                    YTrainCollapsed[:, nO] = np.argmax(  YTrain[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"]-1], axis=1)
-                forPreds[:, -1]        = np.argmax(oobPreds[:, optionsFor["task_ids"]:], axis=1)
-                YTrainCollapsed[:, -1] = np.argmax(  YTrain[:, optionsFor["task_ids"]:], axis=1)
+                forPreds[:, -1]        = np.argmax(oobPreds[:, optionsFor["task_ids"][-1]:], axis=1)
+                YTrainCollapsed[:, -1] = np.argmax(  YTrain[:, optionsFor["task_ids"][-1]:], axis=1)
                 CCF["outOfBagError"]   = (1 - np.nanmean(forPreds==YTrainCollapsed, axis=0))
             else:
                 forPreds = np.empty((XTrain.shape[0], optionsFor["task_ids"].size))
                 forPreds.fill(np.nan)
                 YTrainCollapsed = np.empty((XTrain.shape[0], optionsFor["task_ids"].size))
                 YTrainCollapsed.fill(np.nan)
-                for nO in range(optionsFor["task_ids"].size - 1):
+                for nO in range(optionsFor["task_ids"].size - 2):
                     forPreds[:, nO]        = np.argmax(oobPreds[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"][nO+1]-1], axis=1)
                     YTrainCollapsed[:, nO] = np.argmax(  YTrain[:, optionsFor["task_ids"][nO]:optionsFor["task_ids"][nO+1]-1], axis=1)
                 forPreds[:, -1]        = np.argmax(oobPreds[:, optionsFor["task_ids"][-1]:], axis=1)

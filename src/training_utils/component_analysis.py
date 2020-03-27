@@ -30,7 +30,7 @@ def componentAnalysis(X, Y, processes, epsilon):
         probs[~bToSample] = 0
         cumprobs  = probs.cumsum(axis=0)/np.sum(probs)
         iSampled  = np.sum(np.random.rand() > cumprobs) + 1
-        iToSample = bToSample.ravel().nonzero()[0][0]
+        iToSample = bToSample.ravel().nonzero()[0]
         for n in range(iToSample.size):
             processes[iToSample[n]] = False
         processes[iSampled] = True
@@ -97,7 +97,7 @@ def componentAnalysis(X, Y, processes, epsilon):
         if r1.size == 0:
             rankX = 0
         else:
-            rankX = np.sum(np.absolute(np.diag(r1)) >= (epsilon * np.absolute(r1[0])))
+            rankX = np.sum(np.absolute(np.diag(r1)) >= (epsilon * np.absolute(r1[0, 0])))
 
         if rankX == 0:
             A = np.concatenate((np.array([[1]]), np.zeros((nXorg - 1, 1))))
@@ -119,7 +119,7 @@ def componentAnalysis(X, Y, processes, epsilon):
             if r2.size == 0:
                 rankY = 0
             else:
-                rankY = np.sum(np.absolute(np.diag(r2)) >= (epsilon * np.absolute(r2[0])))
+                rankY = np.sum(np.absolute(np.diag(r2)) >= (epsilon * np.absolute(r2[0, 0])))
 
             if rankY == 0:
                 A = np.concatenate((np.array([[1]]), np.zeros((nXorg - 1, 1))))
@@ -183,14 +183,17 @@ def componentAnalysis(X, Y, processes, epsilon):
     # Note that as in general only a projection matrix is given, we need to
     # add the mean back to be consistent with general use.  This equates to
     # addition of a constant term to each column in U
-    U = X @ projMat
-    V = Y @ yprojMat
+    U = np.dot(X, projMat)
+    V = np.dot(Y, yprojMat)
 
     # Finally, add back in the empty rows in the projection matrix for the
     # things which didn't vary
     A = np.zeros((nXorg, projMat.shape[1]))
     A[bXVaries, :] = projMat
     B = np.zeros((nYorg, yprojMat.shape[1]))
-    B[bYvaries, :] = yprojMat
+    if len(bYvaries.shape) > 1:
+        B[bYvaries[0], :] = yprojMat
+    else:
+        B[bYvaries, :] = yprojMat
 
     return A, B, U, V, r

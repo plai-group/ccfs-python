@@ -3,7 +3,7 @@ import numpy as np
 from collections  import OrderedDict
 from src.generate_CCF import genCCF
 from src.predict_from_CCF import predictFromCCF
-from src.plotting.plot_surface import plotCCFDecisionSurface
+from src.plotting.plot_surface import plotCCFRegDecisionSurface
 
 # Sample Camel6 Data Testing script
 
@@ -59,7 +59,7 @@ print('Dataset Loaded!')
 
 # Call CCF
 print('CCF.......')
-CCF = genCCF(XTrain, YTrain, nTrees=200, bReg=True, optionsFor=optionsClassCCF)
+CCF = genCCF(XTrain, YTrain, nTrees=200, bReg=True, optionsFor=optionsClassCCF, do_parallel=True)
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 print('CCF Mean squared error (lower better): ', (np.mean((YpredCCF - YTest)**2)))
 
@@ -67,4 +67,4 @@ print('CCF Mean squared error (lower better): ', (np.mean((YpredCCF - YTest)**2)
 # Plotting
 x1Lims = [-1.15, 1.15]
 x2Lims = [-1.75, 1.75]
-plotCCFDecisionSurface("camel_contour.svg", CCF, x1Lims, x2Lims, XTrain, X=XTest, Y=YTest, plot_X=False)
+plotCCFRegDecisionSurface("camel_contour.svg", CCF, x1Lims, x2Lims, XTrain, X=XTest, Y=YTest, plot_X=False)

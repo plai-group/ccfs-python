@@ -47,11 +47,12 @@ def makeExpansionFunc(wZ, bZ, bIncOrig):
     return f
 
 def calc_mse(cumtotal, cumsq, YTrainSort):
-    value = np.divide(cumsq, sVT(np.arange(YTrainSort.shape[0]))) -\
+    value = np.divide(cumsq, sVT(np.arange(1, YTrainSort.shape[0]+1))) -\
             np.divide(((cumtotal[0:-1, :])**2  + YTrainSort**2 + np.multiply(2 * cumtotal[0:-1, :], YTrainSort)),\
-                       sVT(np.arange(YTrainSort.shape[0])**2))
+                       sVT(np.arange(1, YTrainSort.shape[0]+1)**2))
 
     return value
+
 
 #-------------------------------------------------------------------------------
 def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
@@ -125,7 +126,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     # Subsample features as required for hyperplane sampling
     #---------------------------------------------------------------------------
     iCanBeSelected = fastUnique(X=iFeatureNum)
-    iCanBeSelected[np.isnan(iCanBeSelected)] = np.array([])
+    iCanBeSelected = iCanBeSelected[~np.isnan(iCanBeSelected)]
     lambda_   = np.min((iCanBeSelected.size, options["lambda"]))
     indFeatIn = np.random.choice(int(iCanBeSelected.size), int(lambda_), replace=False)
     iFeatIn   = iCanBeSelected[indFeatIn]
@@ -145,13 +146,13 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         while (not np.all(bXVaries)) and lambda_ > 0:
             iFeatureNum[iInNew[~bXVaries]] = np.nan
             bInMat[:, iInNew[~bXVaries]] = False
-            bRemainsSelected = np.any(bInMat, aixs=1)
+            bRemainsSelected = np.any(bInMat, axis=1)
             nSelected = nSelected + bRemainsSelected.sum(axis=0)
-            iCanBeSelected[indFeatIn] = []
+            iCanBeSelected = np.delete(iCanBeSelected, indFeatIn)
             lambda_   = np.min((iCanBeSelected.size, options["lambda"]-nSelected))
             if lambda_ < 1:
                 break
-            indFeatIn = np.random.choice(iCanBeSelected.size, size=lambda_, replace=False)
+            indFeatIn = np.random.choice(iCanBeSelected.size, size=int(lambda_), replace=False)
             iFeatIn   = iCanBeSelected[indFeatIn]
             bInMat    = np.equal(sVT(iFeatureNum.flatten(order='F')), iFeatIn.flatten(order='F'))
             iInNew    = (np.any(bInMat, axis=0)).ravel().nonzero()[0]
@@ -242,8 +243,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             # Calculate the probabilities of being at each class in each of child
             # nodes based on proportion of training data for each of possible
             # splits using current projection
-            UTrainSort    = np.sort(UTrain[:, nVarAtt])
-            iUTrainSort   = np.argsort(UTrain[:, nVarAtt])
+            sort_UTrain   = UTrain[:, nVarAtt].flatten(order='F')
+            UTrainSort    = np.sort(sort_UTrain)
+            iUTrainSort   = np.argsort(sort_UTrain)
             bUniquePoints = np.concatenate((np.diff(UTrainSort, n=1, axis=0) > options["XVariationTol"], np.array([False])))
 
             if options["bUseOutputComponentsMSE"] and bReg and YTrain.shape[1] > 1 and (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
@@ -252,7 +254,6 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 VTrainSort = YTrain[iUTrainSort, :]
 
             leftCum = np.cumsum(VTrainSort, axis=0)
-
             if (YTrain.shape[1] ==1 or options["bSepPred"]) and (not bReg):
                 # Convert to [class_doesnt_exist,class_exists]
                 leftCum = np.concatenate((np.subtract(sVT(X=np.arange(0,N)), leftCum), leftCum))
@@ -299,8 +300,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                    metricRight = metricRight[:, taskidxs_R] - np.concatenate((np.zeros((metricRight.shape[0], 1)), metricRight[:, (options["task_ids"][1:] - 1)]))
             else:
                 if options["splitCriterion"] == 'mse':
-                    cumSqLeft = (VTrainSort**2).cumsum(axis=0)
-                    varData   = np.subtract((cumSqLeft[-1,:]/N), (leftCum[-1, :]/N)**2)
+                    cumSqLeft = np.cumsum(VTrainSort**2)
+                    cumSqLeft = np.expand_dims(cumSqLeft, axis=1)
+                    varData   = np.subtract((cumSqLeft[-1]/N), (leftCum[-1, :]/N)**2)
                     if np.all(varData < (options["mseTotal"] * options["mseErrorTolerance"])):
                         # Total variation is less then the allowed tolerance so
                         # terminate and construct a leaf
@@ -309,23 +311,23 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
                     cumtotal_l = np.concatenate((np.zeros((1, VTrainSort.shape[1])), leftCum))
                     metricLeft = calc_mse(cumtotal=cumtotal_l, cumsq=cumSqLeft, YTrainSort=VTrainSort)
-                    metricLeft[np.isnan(metricLeft)] = 0.0
                     # For calculating the right need to go in additive order again
                     # so go from other end and then flip
                     end  = cumSqLeft.shape[0]  - 1
                     vend = VTrainSort.shape[0] - 1
+
                     metricRight = np.concatenate((np.zeros((1, VTrainSort.shape[1])),\
                                   calc_mse(rightCum[::-1, :],\
-                                           np.subtract(cumSqLeft[-1, :], cumSqLeft[(end-1)::-1, :]),\
+                                           np.subtract((cumSqLeft[-1, :][np.newaxis]), cumSqLeft[(end-1)::-1, :]),\
                                            VTrainSort[vend:0:-1, :])))
-                    metricRight[np.isnan(metricRight)] = 0.0
+
                     metricRight = metricRight[::-1, :]
                     # No need to do the grouping for regression as each must be
                     # a seperate output anyway.
                 else:
                     assert (False), 'Invalid split criterion!'
 
-            metricCurrent = metricLeft[-1]
+            metricCurrent = np.copy(metricLeft[-1])
             metricLeft[~bUniquePoints]  = np.inf
             metricRight[~bUniquePoints] = np.inf
             # Calculate gain in metric for each of possible splits based on current
@@ -337,7 +339,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                              np.multiply(np.arange(N-1, -1, -1), metricRight))/N)
             else:
                 metricGain = np.subtract(metricCurrent,\
-                         (np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
+                         ( np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
                          + np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight))/N)
 
             # Combine gains if there are mulitple outputs.  Note that for gini,
@@ -365,7 +367,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             # Randomly sample from equally best splits
             iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])
             splitGains[nVarAtt] = np.max(metricGain[0:-1])
-            iEqualMax = ((np.absolute(metricGain[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero())[0]
+            iEqualMax = ((np.absolute(metricGain.flatten(order='F')[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero())[0]
             if iEqualMax.size == 0:
                 iEqualMax = np.array([1])
             iSplits[nVarAtt] = iEqualMax[np.random.randint(iEqualMax.size)]
@@ -394,16 +396,15 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         #-----------------------------------------------------------------------
         # Establish partition point and assign to child
         #-----------------------------------------------------------------------
-        UTrain = UTrain[:, iDir]
-        UTrainSort = np.sort(UTrain)
+        UTrain = sVT(UTrain[:, iDir])
+        UTrainSort = np.sort(UTrain, axis=0)
 
         # The convoluted nature of the below is to avoid numerical errors
         uTrainSortLeftPart = UTrainSort[iSplit]
-        UTrainSort     = UTrainSort - uTrainSortLeftPart
-        partitionPoint = UTrainSort[iSplit]*0.5 + UTrainSort[iSplit+1]*0.5
-        partitionPoint = partitionPoint + uTrainSortLeftPart
-        UTrainSort     = UTrainSort + uTrainSortLeftPart
-
+        UTrainSort     = np.subtract(UTrainSort, uTrainSortLeftPart)
+        partitionPoint = np.add(np.multiply(UTrainSort[iSplit], 0.5), np.multiply(UTrainSort[iSplit+1], 0.5))
+        partitionPoint = np.add(partitionPoint, uTrainSortLeftPart)
+        UTrainSort     = np.add(UTrainSort, uTrainSortLeftPart)
         bLessThanTrain = (UTrain <= partitionPoint)
 
         if (not np.any(bLessThanTrain)) or np.all(bLessThanTrain):

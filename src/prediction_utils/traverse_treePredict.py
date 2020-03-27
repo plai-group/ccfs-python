@@ -25,13 +25,20 @@ def traverse_tree_predict(tree, X):
             else:
                 bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
         else:
-            bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
+            if len(tree["decisionProjection"].shape) < 2:
+                decisionProjection = np.expand_dims(tree["decisionProjection"], axis=1)
+            else:
+                decisionProjection = tree["decisionProjection"]
 
+            bLessChild = np.dot(X[:, tree["iIn"]], decisionProjection) <= tree["paritionPoint"]
 
         leaf_mean =  np.empty((X.shape[0], tree["mean"].size))
         leaf_mean.fill(np.nan)
         node = np.array([{}])
         leaf_node = npmat.repmat(node, X.shape[0], 1)
+
+        if len(bLessChild.shape) > 1:
+            bLessChild = np.squeeze(bLessChild, axis=1)
 
         if np.any(bLessChild):
             leaf_mean[bLessChild, :], leaf_node[bLessChild] = traverse_tree_predict(tree["lessthanChild"], X[bLessChild, :])

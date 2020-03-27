@@ -41,7 +41,7 @@ def classExpansion(Y, N, optionsFor):
         for k in range(classes.size):
             Y[:, k] = (k == Yindexes)
 
-        optionsFor["task_ids"] = 1
+        optionsFor["task_ids"] = np.array([0])
 
     elif isinstance(Y, pd.DataFrame):
         # TODO: Add support for dataframe

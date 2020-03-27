@@ -77,7 +77,7 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     XTrain = XTrainRC[:, bOrdinal]
     XCat   = XTrainRC[:, ~bOrdinal]
 
-    iFeatureNum  = np.arange(XTrain.shape[1])
+    iFeatureNum  = np.arange(XTrain.shape[1]) * 1.0
     featureNames = featureNamesOrig[bOrdinal]
     featureBaseNames = featureNamesOrig[~bOrdinal]
 
