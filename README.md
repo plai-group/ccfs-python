@@ -52,3 +52,5 @@ https://github.com/twgr/ccfs
   year={2015}
 }
 ```
+
+![alt-text-1](./logo/plai.jpeg "PLAI-LAB")
