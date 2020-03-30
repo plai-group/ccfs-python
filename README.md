@@ -18,9 +18,9 @@ numerical computing libraries.
 
 (This code base was developed on Python3.6)
 
-### Code
+## Code
 ```bash
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 For classification example run the following command:
