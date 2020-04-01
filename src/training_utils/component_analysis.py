@@ -189,10 +189,18 @@ def componentAnalysis(X, Y, processes, epsilon):
     # Finally, add back in the empty rows in the projection matrix for the
     # things which didn't vary
     A = np.zeros((nXorg, projMat.shape[1]))
-    A[bXVaries, :] = projMat
+    if len(bXVaries.shape) > 1 and bXVaries.shape[0] == 1:
+        A[bXVaries[0], :] = projMat
+    elif len(bXVaries.shape) > 1 and bXVaries.shape[1] == 1:
+        A[bXVaries[:, 0], :] = projMat
+    else:
+        A[bXVaries, :] = projMat
+
     B = np.zeros((nYorg, yprojMat.shape[1]))
-    if len(bYvaries.shape) > 1:
+    if len(bYvaries.shape) > 1 and bYvaries.shape[0] == 1:
         B[bYvaries[0], :] = yprojMat
+    elif len(bYvaries.shape) > 1 and bYvaries.shape[1] == 1:
+        B[bYvaries[:, 0], :] = yprojMat
     else:
         B[bYvaries, :] = yprojMat
 
