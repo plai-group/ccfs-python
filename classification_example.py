@@ -60,7 +60,7 @@ print('Dataset Loaded!')
 
 # Call CCF
 print('CCF.......')
-CCF = genCCF(XTrain, YTrain, nTrees=100, optionsFor=optionsClassCCF, do_parallel=True)
+CCF = genCCF(XTrain, YTrain, nTrees=200, optionsFor=optionsClassCCF, do_parallel=True)
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==(YpredCCF), axis=0))),  '%')
 
