@@ -1,3 +1,5 @@
+[![arxiv badge](https://img.shields.io/badge/arXiv-1507.05444-red)](https://arxiv.org/abs/1507.05444)
+
 # Canonical Correlation Forests (CCFs)
 
 [CCFs](https://arxiv.org/abs/1507.05444) are a decision tree ensemble method for classification and regression. CCFs naturally
@@ -34,7 +36,7 @@ python3 regression_example.py
 ```
 
 ### Contribution
-Any improvements to the code base are welcomed.
+Any improvements to the code base are welcomed, submit a merge request.
 
 
 #### Original Code
