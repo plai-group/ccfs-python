@@ -1,5 +1,4 @@
 import inspect
-import warnings
 import scipy.io
 import numpy as np
 from src.utils.commonUtils import sVT
@@ -12,10 +11,11 @@ from src.utils.ccfUtils import random_feature_expansion
 from src.utils.ccfUtils import genFeatureExpansionParameters
 from src.training_utils.component_analysis import componentAnalysis
 from src.training_utils.twopoint_max_marginsplit import twoPointMaxMarginSplit
+
+import warnings
 warnings.filterwarnings('ignore')
-import pdb
 import logging
-logger  = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 def setupLeaf(YTrain, bReg, options):
     """
