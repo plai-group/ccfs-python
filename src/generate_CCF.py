@@ -271,7 +271,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
         mu_XTrain  = np.nanmean(XTrain, axis=0)
         std_XTrain = np.nanstd(XTrain,  axis=0, ddof=1)
         inputProcessDetails = {'bOrdinal': np.array([True] * XTrain.shape[1]), 'mu_XTrain': mu_XTrain, 'std_XTrain': std_XTrain}
-        inputProcessDetails["Cats"] = np.array([{}])
+        inputProcessDetails["Cats"] = {}
         XTrain = replicateInputProcess(XTrain, inputProcessDetails)
         if (not (XTest.size == 0)):
              XTest = replicateInputProcess(XTest, inputProcessDetails);

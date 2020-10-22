@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from src.utils.ccfUtils import mat_unique
 from src.utils.commonUtils import sVT
 from src.utils.commonUtils import islogical
@@ -24,7 +25,8 @@ def classExpansion(Y, N, optionsFor):
 
     Returns
     -------
-    Y:  Numpy array
+    Y:  Numpy array => For Numerical categories only
+        Pandas DataFrame => For Numeric/String/Categorical
         Y in binary expansion format
     classes:  float
         Names of classes.  In CCT only the class index is stored and
@@ -33,7 +35,21 @@ def classExpansion(Y, N, optionsFor):
         Updated forest options, e.g. because bSepPred has been
         switched on because non-mutually exclusive classes.
     """
-    if Y.shape[0] == N and Y.shape[1] == 1:
+    if isinstance(Y, pd.DataFrame):
+        assert (Y.shape[1]==1), 'If Y is a DataFrame it should either be Nx1 for a single output'
+        assert (not optionsFor["bSepPred"]), 'Seperate in-out prediction is only valid when Y is a logical array'
+
+        classes = np.unique(Y.iloc[:, 0])
+        nCats   = len(classes)
+        Y_expanded = np.zeros((Y.shape[0], classes.size))
+
+        for c in range(nCats):
+            Y_expanded[Y.iloc[:, 0] == classes[c], c] = 1;
+
+        Y = Y_expanded
+        optionsFor["task_ids"] = np.array([0])
+
+    elif Y.shape[0] == N and Y.shape[1] == 1:
         assert (not optionsFor["bSepPred"]), 'Seperate in-out prediction is only valid when Y is a logical array'
         classes, _, Yindexes = mat_unique(Y)
         Y  = np.empty((Yindexes.shape[0], classes.size))
@@ -42,11 +58,6 @@ def classExpansion(Y, N, optionsFor):
             Y[:, k] = (k == Yindexes)
 
         optionsFor["task_ids"] = np.array([0])
-
-    elif isinstance(Y, pd.DataFrame):
-        # TODO: Add support for dataframe
-        assert (True), 'Dataframe support not yet implemented!'
-        pass
 
     elif islogical(Y) or (np.max(Y.flatten(order='F')) == 1 and np.min(Y.flatten(order='F')) == 0):
         N_c_present = np.cumsum(Y, axis=1)

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from src.utils.commonUtils import sVT
 from src.utils.commonUtils import is_numeric
+from src.utils.commonUtils import makeSureString
 from src.prediction_utils.replicate_input_process import replicateInputProcess
 
 def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
@@ -40,7 +41,10 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     D = XTrainRC.shape[1]
 
     if isinstance(XTrainRC, pd.DataFrame):
-        featureNamesOrig = list(XTrainRC.columns.values)
+        featureNamesOrig = np.array(list(XTrainRC.columns.values))
+        # Rename pandas column for indexing convenience
+        new_col_names = [idx for idx in range(len(featureNamesOrig))]
+        XTrainRC.columns = new_col_names
     else:
         featureNamesOrig = [f'Var_{idx}' for idx in range(XTrainRC.shape[1])]
 
@@ -107,11 +111,14 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
             if len(iFeatureNum) == 0:
                 iFeatureNum = np.ones((1,nCats))
             else:
-                iFeatureNum = np.concatenate((iFeatureNum, (iFeatureNum[:, -1] + 1) * np.ones((1,nCats))), axis=1).astype(int)
+                iFeatureNum = np.concatenate((iFeatureNum, (iFeatureNum[:, -1] + 1) * np.ones((1,nCats))), axis=1).astype(float)
 
             XTrain = np.concatenate((XTrain, np.zeros((XTrain.shape[0], nCats))), axis=1)
             for c in range(nCats):
                 XTrain[XCat.iloc[:, n] == cats_unique[c], (sizeSoFar+c)] = 1;
+
+        # Remove single dimension
+        iFeatureNum = np.squeeze(iFeatureNum)
     else:
         Cats = {}
         iFeatureNum  = np.arange(XTrain.shape[1]) * 1.0

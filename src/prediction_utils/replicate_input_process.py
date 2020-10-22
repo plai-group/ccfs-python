@@ -20,7 +20,7 @@ def replicateInputProcess(Xraw, InputProcessDetails):
     if isinstance(Xraw, pd.DataFrame):
         # Anything not numeric in the ordinal features taken to be missing
         # values
-        X = XTrainRC.loc[:, bOrdinal]
+        X = Xraw.loc[:, bOrdinal]
         bNumeric = is_numeric(X, compress=False)
         bNumeric = pd.DataFrame(bNumeric, dtype=type(True))
         X.iloc[~bNumeric] = np.nan
@@ -30,7 +30,7 @@ def replicateInputProcess(Xraw, InputProcessDetails):
 
     # Categorical Features
     if isinstance(Xraw, pd.DataFrame):
-        XCat = Xraw[:, ~bOrdinal]
+        XCat = Xraw.loc[:, ~bOrdinal]
         XCat = makeSureString(XCat, nSigFigTol=10)
         # Expand the categorical features
         for n in range(XCat.shape[1]):
@@ -39,7 +39,7 @@ def replicateInputProcess(Xraw, InputProcessDetails):
             # This is setup so that any trivial features are not included
             if nCats==1:
                 continue
-            sizeSoFar = iFeatureNum.shape[1]
+            sizeSoFar = X.shape[1]
             X = np.concatenate((X, np.zeros((X.shape[0], nCats))), axis=1)
             for c in range(nCats):
                 X[XCat.iloc[:, n] == cats_unique[c], (sizeSoFar+c)] = 1;
