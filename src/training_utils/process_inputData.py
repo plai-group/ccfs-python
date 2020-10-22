@@ -10,8 +10,8 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
 
     Parameters
     ----------
-    XTrain: Unprocessed input features, can be a numerical array, a cell
-            array or a table.  Each row is a seperate data point.
+    XTrain: Unprocessed input features, can be a numerical array or dataframe.
+            Each row is a seperate data point.
     bOrdinal: Logical array indicating if the corresponding feature is
               ordinal (i.e. numerical or order categorical).  The default
               treatment is that numerical inputs are ordinal and strings
@@ -39,50 +39,84 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     """
     D = XTrainRC.shape[1]
 
-
     if isinstance(XTrainRC, pd.DataFrame):
         featureNamesOrig = list(XTrainRC.columns.values)
-        # Convert to Numpy
-        raise NotImplementedError("To be implemented")
     else:
-        featureNamesOrig = np.array(['Var'] * XTrainRC.shape[1])
-
+        featureNamesOrig = [f'Var_{idx}' for idx in range(XTrainRC.shape[1])]
 
     if bOrdinal == None:
         if isinstance(XTrainRC, type(np.array([]))):
             # Default is that if input is all numeric, everything is treated as
             # ordinal
             bOrdinal = np.array([True] * D)
-
         else:
-            # Numeric features treated as ordinal, features with only a single
-            # unqiue string and otherwise numeric treated also treated as
-            # ordinal with the string taken to give a missing value and
-            # features with more than one unique string taken as non-ordinal
-            bNumeric = is_numeric(X, compress=False)
+            # Numeric features treated as ordinal
+            bNumeric = is_numeric(XTrainRC, compress=False)
+            # Features with more than one unique string taken as non-ordinal
             iContainsString = (np.sum(~bNumeric, axis=0) > 0).ravel().nonzero()[0]
-            nStr = np.zeros((1, XTrainRC.shape[1]))
+            nStr = np.zeros((XTrainRC.shape[1]), dtype=int)
             for n in iContainsString.flatten(order='F'):
-                xtrain_unique = np.unique(XTrainRC[~bNumeric[:, n], n])
-                nStr[:, n] = xtrain_unique.size
-
-            bOrdinal   = nStr < 2
+                x_unique = np.unique(XTrainRC.loc[~bNumeric[:, n], n])
+                nStr[n]  = len(x_unique)
+            bOrdinal = nStr < 2
+            # Features with only a single unqiue string and otherwise
+            # numeric treated also treated as ordinal with the string
+            # taken to give a missing value
             iSingleStr = (nStr == 1).ravel().nonzero()[0]
-            for n in range(iSingleStr.size):
-                XTrainRC[~bNumeric[:, iSingleStr[n]], iSingleStr[n]] = np.array([np.nan])
+            for n in iSingleStr:
+                XTrainRC.loc[~bNumeric[:, n], n] = np.nan
 
     elif len(bOrdinal) != XTrainRC.shape[1]:
         assert (True), 'bOrdinal must match size of XTrainRC!'
 
-    XTrain = XTrainRC[:, bOrdinal]
-    XCat   = XTrainRC[:, ~bOrdinal]
+    # Numerical Features
+    if isinstance(XTrainRC, pd.DataFrame):
+        # Anything not numeric in the ordinal features taken to be missing
+        # values
+        XTrain   = XTrainRC.loc[:, bOrdinal]
+        bNumeric = is_numeric(XTrain, compress=False)
+        bNumeric = pd.DataFrame(bNumeric, dtype=type(True))
+        XTrain[~bNumeric] = np.nan
+        XTrain = XTrain.to_numpy(dtype=float)
+    else:
+        XTrain = XTrainRC[:, bOrdinal]
 
-    iFeatureNum  = np.arange(XTrain.shape[1]) * 1.0
-    featureNames = featureNamesOrig[bOrdinal]
-    featureBaseNames = featureNamesOrig[~bOrdinal]
+    # Categorical Features
+    if isinstance(XTrainRC, pd.DataFrame):
+        XCat = XTrainRC.loc[:, ~bOrdinal]
+        XCat = makeSureString(XCat, nSigFigTol=10)
+        # Previous properties
+        iFeatureNum  = list(range(XTrain.shape[1]))
+        featureNames = featureNamesOrig[bOrdinal]
+        featureBaseNames = featureNamesOrig[~bOrdinal]
+        # Collect Categorical features
+        Cats = {}
+        iFeatureNum = np.array([iFeatureNum], dtype=int)
+        # Expand the categorical features
+        for n in range(XCat.shape[1]):
+            cats_unique = np.unique(XCat.iloc[:, n])
+            Cats[n]  = cats_unique
+            newNames = np.array([f'Cat_{name}' for name in cats_unique])
+            featureNames = np.concatenate((featureNames, newNames))
 
-    # TODO: Maybe Impelement Expand the categorical features
-    Cats = np.array([])
+            nCats = len(cats_unique)
+            # This is setup so that any trivial features are not included
+            if nCats==1:
+                continue
+            sizeSoFar = iFeatureNum.shape[1]
+            if len(iFeatureNum) == 0:
+                iFeatureNum = np.ones((1,nCats))
+            else:
+                iFeatureNum = np.concatenate((iFeatureNum, (iFeatureNum[:, -1] + 1) * np.ones((1,nCats))), axis=1).astype(int)
+
+            XTrain = np.concatenate((XTrain, np.zeros((XTrain.shape[0], nCats))), axis=1)
+            for c in range(nCats):
+                XTrain[XCat.iloc[:, n] == cats_unique[c], (sizeSoFar+c)] = 1;
+    else:
+        Cats = {}
+        iFeatureNum  = np.arange(XTrain.shape[1]) * 1.0
+        featureNames = featureNamesOrig[bOrdinal]
+        featureBaseNames = featureNamesOrig[~bOrdinal]
 
     # Convert to Z-scores, Normalize feature vectors
     mu_XTrain  = np.nanmean(XTrain, axis=0)
@@ -96,7 +130,7 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
     # If required, generate function for converting additional data and
     # calculate conversion for any test data provided.
     inputProcessDetails = {}
-    inputProcessDetails["Cats"]       = Cats
+    inputProcessDetails["Cats"]       = Cats # {0: array(['False', 'True'], dtype=object), 1: array(['f', 't'], dtype=object)}
     inputProcessDetails['bOrdinal']   = bOrdinal
     inputProcessDetails['mu_XTrain']  = mu_XTrain
     inputProcessDetails['std_XTrain'] = std_XTrain

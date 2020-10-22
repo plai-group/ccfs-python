@@ -174,7 +174,9 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
     nTrees: Int
             Number of trees to create.
     XTrain: pandas DataFrame/Numpy array
-            Array giving training features.  Each row should be a
+            Numpy array => For Numeric only
+            Pandas DataFrame => For Numeric/String/Categorical
+            Array giving training features. Each row should be a
             seperate data point and each column a seperate feature.
             Must be numerical array with missing values marked as
             NaN if iFeatureNum is provided, otherwise can be any

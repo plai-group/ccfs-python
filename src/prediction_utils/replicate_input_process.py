@@ -16,17 +16,35 @@ def replicateInputProcess(Xraw, InputProcessDetails):
     if Xraw.shape[1] != bOrdinal.size:
         assert (False), 'Incorrect number of features!'
 
-    # TODO: Add support for dataframe
+    # Numerical Features
     if isinstance(Xraw, pd.DataFrame):
-        featureNamesOrig = list(XTrainRC.columns.values)
-        # Convert to Numpy
-        raise NotImplementedError("To be implemented")
+        # Anything not numeric in the ordinal features taken to be missing
+        # values
+        X = XTrainRC.loc[:, bOrdinal]
+        bNumeric = is_numeric(X, compress=False)
+        bNumeric = pd.DataFrame(bNumeric, dtype=type(True))
+        X.iloc[~bNumeric] = np.nan
+        X = X.to_numpy(dtype=float)
+    else:
+        X = Xraw[:, bOrdinal]
 
-    X = Xraw[:, bOrdinal]
+    # Categorical Features
+    if isinstance(Xraw, pd.DataFrame):
+        XCat = Xraw[:, ~bOrdinal]
+        XCat = makeSureString(XCat, nSigFigTol=10)
+        # Expand the categorical features
+        for n in range(XCat.shape[1]):
+            cats_unique = Cats[n]
+            nCats = len(cats_unique)
+            # This is setup so that any trivial features are not included
+            if nCats==1:
+                continue
+            sizeSoFar = iFeatureNum.shape[1]
+            X = np.concatenate((X, np.zeros((X.shape[0], nCats))), axis=1)
+            for c in range(nCats):
+                X[XCat.iloc[:, n] == cats_unique[c], (sizeSoFar+c)] = 1;
 
-    # TODO: Maybe Impelement Expand the categorical features
-    XCat = Xraw[:, ~bOrdinal]
-
+    # Normalize feature vectors
     X = np.divide(np.subtract(X, InputProcessDetails["mu_XTrain"]), InputProcessDetails["std_XTrain"])
 
     if InputProcessDetails["bNaNtoMean"]:
