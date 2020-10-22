@@ -52,6 +52,7 @@ optionsClassCCF['task_ids']   = np.array([])
 # print(optionsClassCCF)
 
 #-------------------------------------------------------------------------------
+## TRAIN
 # Load data
 XTrain = pd.read_csv('/ccfs-python/dataset/sick.csv')
 YTrain = pd.DataFrame(XTrain.pop('Class'))
@@ -61,7 +62,7 @@ imputer = SimpleImputer(missing_values=np.nan, strategy='most_frequent')
 XTrain = imputer.fit_transform(XTrain)
 XTrain = pd.DataFrame(XTrain)
 
-# Both are in pandas DataFrame
+# Make sure X, y are in pandas DataFrame
 if isinstance(XTrain, pd.DataFrame):
     print(XTrain)
 if isinstance(YTrain, pd.DataFrame):
@@ -73,21 +74,25 @@ print('Dataset Loaded!')
 print('CCF.......')
 CCF = genCCF(XTrain, YTrain, nTrees=100, optionsFor=optionsClassCCF, do_parallel=True)
 
-# Test
+## TRAIN
+# Load data
 XTest = pd.read_csv('/ccfs-python/dataset/sick_test.csv')
 YTest = pd.DataFrame(XTest.pop('Class'))
+
 # Basic missing values imputation
 XTest = imputer.fit_transform(XTest)
 XTest = pd.DataFrame(XTest)
-# Both are in pandas DataFrame
+
+# Make sure X, y are in pandas DataFrame
 if isinstance(XTest, pd.DataFrame):
     print(XTest)
-if isinstance(YTrain, pd.DataFrame):
-    print(YTrain)
+if isinstance(YTest, pd.DataFrame):
+    print(YTest)
 
+# Prediction
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 
 # Evaluate
 YTest = YTest.to_numpy()
-print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==(YpredCCF), axis=0))),  '%')
+print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==YpredCCF, axis=0))),  '%')
 #-------------------------------------------------------------------------------
