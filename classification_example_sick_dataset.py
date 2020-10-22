@@ -74,7 +74,7 @@ print('Dataset Loaded!')
 print('CCF.......')
 CCF = genCCF(XTrain, YTrain, nTrees=100, optionsFor=optionsClassCCF, do_parallel=True)
 
-## TRAIN
+## TEST
 # Load data
 XTest = pd.read_csv('/ccfs-python/dataset/sick_test.csv')
 YTest = pd.DataFrame(XTest.pop('Class'))
