@@ -227,7 +227,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
      bOrdinal:
              If the data is to be processed, this allows
              specification of ordinal variables.  For default
-             behaviour see processInputData.m
+             behaviour see process_inputData.py
 
     Returns
     -------
