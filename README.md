@@ -13,7 +13,7 @@ numerical computing libraries.
 |:---:|:---:|
 | CCFs results on Spiral Dataset | CCFs results on Camel Dataset |
 
-## Setup Prerequisites
+## Setup
 ```bash
 pip3 install -e .
 ```
