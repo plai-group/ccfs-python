@@ -46,8 +46,9 @@ def processInputData(XTrainRC, bOrdinal=None, XTestRC=None, bNaNtoMean=False):
         new_col_names = [idx for idx in range(len(featureNamesOrig))]
         XTrainRC.columns = new_col_names
     else:
-        featureNamesOrig = [f'Var_{idx}' for idx in range(XTrainRC.shape[1])]
+        featureNamesOrig = np.array([f'Var_{idx}' for idx in range(XTrainRC.shape[1])])
 
+    # Logical array indicating if the corresponding feature is ordinal
     if bOrdinal == None:
         if isinstance(XTrainRC, type(np.array([]))):
             # Default is that if input is all numeric, everything is treated as

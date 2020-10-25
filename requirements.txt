@@ -1,4 +1,4 @@
-Numpy==1.17.3
-SciPy==1.3.1
+Numpy==1.18.2
+SciPy==1.4.1
 Matplotlib==3.1.2
 
