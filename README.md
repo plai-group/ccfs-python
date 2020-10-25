@@ -15,7 +15,7 @@ numerical computing libraries.
 
 ## Setup Prerequisites
 ```bash
-pip install -r requirements.txt
+pip3 install -e .
 ```
 
 (This code base was developed on Python3.6)
@@ -24,6 +24,8 @@ pip install -r requirements.txt
 
 For classification example run the following command:
 ```bash
+cd tests
+
 python3 classification_example.py
 ```
 
