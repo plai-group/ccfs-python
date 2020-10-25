@@ -12,6 +12,7 @@ def replicateInputProcess(Xraw, InputProcessDetails):
     """
     bOrdinal = InputProcessDetails["bOrdinal"]
     Cats     = InputProcessDetails["Cats"]
+    XCat_exist = InputProcessDetails['XCat_exist']
 
     if Xraw.shape[1] != bOrdinal.size:
         assert (False), 'Incorrect number of features!'
@@ -29,7 +30,7 @@ def replicateInputProcess(Xraw, InputProcessDetails):
         X = Xraw[:, bOrdinal]
 
     # Categorical Features
-    if isinstance(Xraw, pd.DataFrame):
+    if isinstance(Xraw, pd.DataFrame) and XCat_exist:
         XCat = Xraw.loc[:, ~bOrdinal]
         XCat = makeSureString(XCat, nSigFigTol=10)
         # Expand the categorical features

@@ -98,7 +98,7 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
         tree["iOutOfBag"] = iOob
         tree["predictsOutOfBag"], _ = predictFromCCT(tree, XTrainOrig[iOob, :])
 
-    # Store rotation deatils if necessary
+    # Store rotation details if necessary
     if not (optionsFor["treeRotation"] == None):
         tree["rotDetails"] = {'R': R, 'muX': muX}
 
@@ -272,6 +272,7 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
         std_XTrain = np.nanstd(XTrain,  axis=0, ddof=1)
         inputProcessDetails = {'bOrdinal': np.array([True] * XTrain.shape[1]), 'mu_XTrain': mu_XTrain, 'std_XTrain': std_XTrain}
         inputProcessDetails["Cats"] = {}
+        inputProcessDetails['XCat_exist'] = False
         XTrain = replicateInputProcess(XTrain, inputProcessDetails)
         if (not (XTest.size == 0)):
              XTest = replicateInputProcess(XTest, inputProcessDetails);

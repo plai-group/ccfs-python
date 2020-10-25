@@ -13,17 +13,14 @@ numerical computing libraries.
 |:---:|:---:|
 | CCFs results on Spiral Dataset | CCFs results on Camel Dataset |
 
-## Prerequisites
-1. Numpy == 1.17.3
-2. SciPy == 1.3.1
-3. Matplotlib == 3.1.2  # For Visualization
-
-(This code base was developed on Python3.6)
-
-## Code
+## Setup Prerequisites
 ```bash
 pip install -r requirements.txt
 ```
+
+(This code base was developed on Python3.6)
+
+## Run Examples
 
 For classification example run the following command:
 ```bash
