@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.matlib
 import pandas as pd
 from src.utils.ccfUtils import mat_unique
 from src.utils.commonUtils import sVT
@@ -62,8 +63,8 @@ def classExpansion(Y, N, optionsFor):
     elif islogical(Y) or (np.max(Y.flatten(order='F')) == 1 and np.min(Y.flatten(order='F')) == 0):
         N_c_present = np.cumsum(Y, axis=1)
         if np.all(N_c_present[:, -1] == 1) and (not optionsFor["bSepPred"]):
-            optionsFor["task_ids"] = 1
-            classes = sVT(np.arange(0, Y.shape[1]))
+            optionsFor["task_ids"] = np.array([0])
+            classes = np.arange(0, Y.shape[1])
         else:
             if (not optionsFor["bSepPred"]):
                 optionsFor["bSepPred"] = True
