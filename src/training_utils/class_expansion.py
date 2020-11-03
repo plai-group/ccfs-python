@@ -74,7 +74,7 @@ def classExpansion(Y, N, optionsFor):
             classes = np.matlib.repmat([False, True], 1, Y.shape[1])
 
     else:
-        assert (not optionsFor["bSepPred"]),'Seperate in-out prediction is only valid when Y is a logical array!'
+        assert (not optionsFor["bSepPred"]), 'Seperate in-out prediction is only valid when Y is a logical array!'
         classes = {}
         Ycell   = {}
 

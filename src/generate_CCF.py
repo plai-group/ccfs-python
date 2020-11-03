@@ -98,7 +98,7 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
         tree["iOutOfBag"] = iOob
         tree["predictsOutOfBag"], _ = predictFromCCT(tree, XTrainOrig[iOob, :])
 
-    # Store rotation details if necessary
+    # Store rotation deatils if necessary
     if not (optionsFor["treeRotation"] == None):
         tree["rotDetails"] = {'R': R, 'muX': muX}
 
@@ -275,12 +275,16 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
         inputProcessDetails['XCat_exist'] = False
         XTrain = replicateInputProcess(XTrain, inputProcessDetails)
         if (not (XTest.size == 0)):
-             XTest = replicateInputProcess(XTest, inputProcessDetails);
+             XTest = replicateInputProcess(XTest, inputProcessDetails)
+    
 
     N = XTrain.shape[0]
     # Note that setting of number of features to subsample is based only
     # number of features before expansion of categoricals.
+    print(iFeatureNum)
     D = (fastUnique(iFeatureNum)).size
+
+    print(D)
 
     if (not bReg):
         # Process provided classes
@@ -310,7 +314,8 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
         optionsFor = updateForD(optionsFor, D)
         optionsFor["org_muY"]  = muY
         optionsFor["org_stdY"] = stdY
-        optionsFor["mseTotal"] = np.array(1)
+        optionsFor["mseTotal"] = 1
+    
 
     # Fill in any unset projection fields and set to false
     projection_fields = ['CCA', 'PCA', 'CCAclasswise', 'Original', 'Random']
@@ -333,10 +338,6 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
     treeOutputTest.fill(np.nan)
     n_nodes_trees = np.empty((nTrees, 1))
     n_nodes_trees.fill(np.nan)
-    tree_train_times = np.empty((nTrees, 1))
-    tree_train_times.fill(np.nan)
-    tree_test_times  = np.empty((nTrees,1))
-    tree_test_times.fill(np.nan)
 
     Ntrain = int(N * optionsFor["propTrain"])
 

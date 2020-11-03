@@ -131,7 +131,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     indFeatIn = np.random.choice(int(iCanBeSelected.size), int(lambda_), replace=False)
     iFeatIn   = iCanBeSelected[indFeatIn]
 
-    bInMat = np.equal(sVT(X=iFeatureNum.flatten(order='F')), np.sort(iFeatIn.flatten(order='F')))
+    bInMat = np.equal((iFeatureNum.flatten(order='F')[np.newaxis]), (np.sort(iFeatIn.flatten(order='F'))[np.newaxis]).T) # 1xk == nx1
     iIn = (np.any(bInMat, axis=0)).ravel().nonzero()[0]
 
     # Check for variation along selected dimensions and
@@ -212,7 +212,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         else:
             projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
             UTrain = np.dot(XTrain[:, iIn], projMat)
-
+        
         #-----------------------------------------------------------------------
         # Choose the features to use
         #-----------------------------------------------------------------------
@@ -243,10 +243,12 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             # Calculate the probabilities of being at each class in each of child
             # nodes based on proportion of training data for each of possible
             # splits using current projection
-            sort_UTrain   = UTrain[:, nVarAtt].flatten(order='F')
+            sort_UTrain   = UTrain[:, nVarAtt].ravel()
             UTrainSort    = np.sort(sort_UTrain)
             iUTrainSort   = np.argsort(sort_UTrain)
-            bUniquePoints = np.concatenate((np.diff(UTrainSort, n=1, axis=0) > options["XVariationTol"], np.array([False])))
+
+            bUniquePoints_ = np.diff(UTrainSort, n=1, axis=0)
+            bUniquePoints  = np.concatenate((bUniquePoints_ > options["XVariationTol"], np.array([False])))
 
             if options["bUseOutputComponentsMSE"] and bReg and YTrain.shape[1] > 1 and (not (yprojMat.size == 0)) and (options["splitCriterion"] == 'mse'):
                 VTrainSort = VTrain[iUTrainSort, :]
@@ -286,18 +288,18 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
 
                 if (not is_numeric(options["taskWeights"])) and (not options["multiTaskGainCombination"] == 'max'):
                     # No need to do anything fancy in the metric calculation
-                    metricLeft  = np.sum(lTerm, axis=1)
-                    metricRight = np.sum(rTerm, axis=1)
+                    metricLeft  = np.sum(lTerm, axis=1, keepdims=True)
+                    metricRight = np.sum(rTerm, axis=1, keepdims=True)
                 else:
                     # Need to do grouped sums for each of the outputs as will be
                     # doing more than a simple averaging of there values
                    metricLeft = np.cumsum(lTerm, axis=1)
-                   taskidxs_L = np.array([(options["task_ids"][1:] - 1), np.array([-1])])
-                   metricLeft = metricLeft[:, taskidxs_L] - np.concatenate((np.zeros((metricLeft.shape[0], 1)), metricLeft[:, (options["task_ids"][1:] - 1)]))
+                   taskidxs_L = np.array([(options["task_ids"][1:] - 2), np.array([-1])])
+                   metricLeft = metricLeft[:, taskidxs_L, np.newaxis]   - np.concatenate((np.zeros((metricLeft.shape[0], 1)),  metricLeft[:, (options["task_ids"][1:] - 2),  np.newaxis]), axis=1)
 
                    metricRight = np.cumsum(rTerm, axis=1)
-                   taskidxs_R  = np.array([(options["task_ids"][1:] - 1), np.array([-1])])
-                   metricRight = metricRight[:, taskidxs_R] - np.concatenate((np.zeros((metricRight.shape[0], 1)), metricRight[:, (options["task_ids"][1:] - 1)]))
+                   taskidxs_R  = np.array([(options["task_ids"][1:] - 2), np.array([-1])])
+                   metricRight = metricRight[:, taskidxs_R, np.newaxis] - np.concatenate((np.zeros((metricRight.shape[0], 1)), metricRight[:, (options["task_ids"][1:] - 2), np.newaxis]), axis=1)
             else:
                 if options["splitCriterion"] == 'mse':
                     cumSqLeft = np.cumsum(VTrainSort**2)
@@ -327,37 +329,33 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 else:
                     assert (False), 'Invalid split criterion!'
 
-            metricCurrent = np.copy(metricLeft[-1])
-            metricLeft[~bUniquePoints]  = np.inf
-            metricRight[~bUniquePoints] = np.inf
+            metricCurrent = np.copy(metricLeft[-1, :])
+            metricLeft[~bUniquePoints,  :] = np.inf
+            metricRight[~bUniquePoints, :] = np.inf
+
             # Calculate gain in metric for each of possible splits based on current
             # metric value minus metric value of child weighted by number of terms
             # in each child
-            if not bReg:
-                metricGain = np.subtract(metricCurrent,\
-                      np.add(np.multiply(np.arange(1,N+1, 1), metricLeft),\
-                             np.multiply(np.arange(N-1, -1, -1), metricRight))/N)
-            else:
-                metricGain = np.subtract(metricCurrent,\
-                         ( np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
-                         + np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight))/N)
+            metricGain = np.subtract(metricCurrent,\
+                        (np.multiply(sVT(np.arange(1,N+1, 1)), metricLeft)\
+                        +np.multiply(sVT(np.arange(N-1, -1, -1)), metricRight))/N)
+            metricGain = np.round(metricGain, decimals=4)
 
             # Combine gains if there are mulitple outputs.  Note that for gini,
             # info and mse, the joint gain is equal to the mean gain, hence
             # taking the mean here rather than explicitly calculating joints before.
-            if len(metricGain.shape) > 1:
-                if metricGain.shape[1] > 1:
-                    if is_numeric(options["taskWeights"]):
-                        # If weights provided, weight task appropriately in terms of importance.
-                        metricGain = np.multiply(metricGain, X=sVT(options["taskWeights"].flatten(order='F')))
+            if metricGain.shape[1] > 1:
+                if is_numeric(options["taskWeights"]):
+                    # If weights provided, weight task appropriately in terms of importance.
+                    metricGain = np.multiply(metricGain, (options["taskWeights"].flatten(order='F')[np.newaxis])) # (nxk) .* (1*k)
 
-                    multiTGC = options["multiTaskGainCombination"]
-                    if multiTGC == 'mean':
-                        metricGain = np.mean(metricGain, axis=1)
-                    elif multiTGC == 'max':
-                        metricGain = np.max(metricGain, axis=1)
-                    else:
-                        assert (False), 'Invalid option for options.multiTaskGainCombination!'
+                multiTGC = options["multiTaskGainCombination"]
+                if multiTGC == 'mean':
+                    metricGain = np.mean(metricGain, axis=1, keepdims=True)
+                elif multiTGC == 'max':
+                    metricGain = np.max(metricGain, axis=1, keepdims=True)
+                else:
+                    assert (False), 'Invalid option for options.multiTaskGainCombination!'
 
             # Disallow splits that violate the minimum number of leaf points
             end = (metricGain.shape[0]-1)
@@ -367,7 +365,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
             # Randomly sample from equally best splits
             iSplits[nVarAtt]    = np.argmax(metricGain[0:-1])
             splitGains[nVarAtt] = np.max(metricGain[0:-1])
-            iEqualMax = ((np.absolute(metricGain.flatten(order='F')[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero())[0]
+            iEqualMax = ((np.absolute(metricGain[0:-1] - splitGains[nVarAtt]) < (10*eps)).ravel().nonzero())[0]
             if iEqualMax.size == 0:
                 iEqualMax = np.array([1])
             iSplits[nVarAtt] = iEqualMax[np.random.randint(iEqualMax.size)]
@@ -391,12 +389,12 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 iDir = iEqualMax[0]
         else:
             assert (False), 'invalid dirIfEqual!'
-        iSplit = iSplits[iDir].astype(int)
+        iSplit = (iSplits[iDir]).astype(int)
 
         #-----------------------------------------------------------------------
         # Establish partition point and assign to child
         #-----------------------------------------------------------------------
-        UTrain = sVT(UTrain[:, iDir])
+        UTrain = UTrain[:, iDir, np.newaxis]
         UTrainSort = np.sort(UTrain, axis=0)
 
         # The convoluted nature of the below is to avoid numerical errors
@@ -405,6 +403,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         partitionPoint = np.add(np.multiply(UTrainSort[iSplit], 0.5), np.multiply(UTrainSort[iSplit+1], 0.5))
         partitionPoint = np.add(partitionPoint, uTrainSortLeftPart)
         UTrainSort     = np.add(UTrainSort, uTrainSortLeftPart)
+        
         bLessThanTrain = (UTrain <= partitionPoint)
 
         if (not np.any(bLessThanTrain)) or np.all(bLessThanTrain):

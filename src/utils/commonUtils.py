@@ -82,7 +82,7 @@ def fastUnique(X):
     if is_row:
         uX = uX[np.concatenate((np.array([True]), np.diff(uX, n=1, axis=0) !=0), axis=0)]
     else:
-        uX = uX[np.concatenate((np.array([[True]]), np.diff(uX, n=1, axis=0) !=0), axis=0)][np.newaxis].T
+        uX = (uX[np.concatenate((np.array([[True]]), np.diff(uX, n=1, axis=0) !=0), axis=0)][np.newaxis]).T
 
     return uX
 
@@ -149,15 +149,16 @@ def queryIfOnlyTwoUniqueRows(X):
 
     #eqX = np.apply_along_axis(my_equal, axis=1, arr=X, b=X[0,:])
 
-    eqX = np.equal(X, X[0, :])
+    eqX = np.equal(X, X[0, np.newaxis, :])
     bEqualFirst = np.all(eqX, axis=1)
 
     iFirstNotEqual = (~bEqualFirst).ravel().nonzero()[0]
     if iFirstNotEqual.size == 0:
         bLessThanTwoUniqueRows = True
         return bLessThanTwoUniqueRows
-
+    
     iToCheck = ((~bEqualFirst[1:]).ravel().nonzero()[0]) + 1
+    
     # Xit = np.apply_along_axis(my_equal, axis=1, arr=X[iToCheck, :], b=X[iFirstNotEqual[0], :])
     Xit = np.equal(X[iToCheck, :], X[iFirstNotEqual[0], :])
     bNotUnique = np.all(Xit, axis=1)
