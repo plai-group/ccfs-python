@@ -148,7 +148,6 @@ def queryIfOnlyTwoUniqueRows(X):
         return bLessThanTwoUniqueRows
 
     #eqX = np.apply_along_axis(my_equal, axis=1, arr=X, b=X[0,:])
-
     eqX = np.equal(X, X[0, np.newaxis, :])
     bEqualFirst = np.all(eqX, axis=1)
 

@@ -50,7 +50,6 @@ def treeOutputsToForestPredicts(CCF, treeOutputs):
         if is_numeric(CCF["classNames"]):
             if islogical(forestPredicts):
                 assert (forestPredicts.shape[1] == 1), 'Class names should have been a cell if multiple outputs!'
-                #print(forestPredicts)
                 forestPredicts = CCF["classNames"][forestPredicts]
             else:
                 forestPredicts = CCF["classNames"][forestPredicts]
