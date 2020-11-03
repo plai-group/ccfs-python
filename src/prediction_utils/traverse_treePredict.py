@@ -21,10 +21,15 @@ def traverse_tree_predict(tree, X):
                 X = np.dot(np.subtract(X, tree["rotDetails"]["muX"]), tree["rotDetails"]["R"])
 
         if ('featureExpansion' in tree.keys()):
-            if inspect.isfunction(tree["featureExpansion"]):
-                bLessChild = np.dot(tree["featureExpansion"](X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
+            if len(tree["decisionProjection"].shape) < 2:
+                decisionProjection = np.expand_dims(tree["decisionProjection"], axis=1)
             else:
-                bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
+                decisionProjection = tree["decisionProjection"]
+            # Check if the function exists
+            if inspect.isfunction(tree["featureExpansion"]):
+                bLessChild = np.dot(tree["featureExpansion"](X[:, tree["iIn"]]), decisionProjection) <= tree["paritionPoint"]
+            else:
+                bLessChild = np.dot(X[:, tree["iIn"]], decisionProjection) <= tree["paritionPoint"]
         else:
             if len(tree["decisionProjection"].shape) < 2:
                 decisionProjection = np.expand_dims(tree["decisionProjection"], axis=1)
