@@ -1,3 +1,4 @@
+import inspect
 import numpy as np
 import numpy.matlib as npmat
 
@@ -20,7 +21,7 @@ def traverse_tree_predict(tree, X):
                 X = np.dot(np.subtract(X, tree["rotDetails"]["muX"]), tree["rotDetails"]["R"])
 
         if ('featureExpansion' in tree.keys()):
-            if not (len(tree["featureExpansion"]) == 0):
+            if inspect.isfunction(tree["featureExpansion"]):
                 bLessChild = np.dot(tree["featureExpansion"](X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]
             else:
                 bLessChild = np.dot((X[:, tree["iIn"]]), tree["decisionProjection"]) <= tree["paritionPoint"]

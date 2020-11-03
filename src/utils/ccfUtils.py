@@ -103,7 +103,7 @@ def random_feature_expansion(X, w, b):
     -------
     Z: Numpy array
     """
-    Z = np.cos(np.add(X@w, b))
+    Z = np.cos(np.add(np.dot(X, w), b))
 
     return Z
 
@@ -124,7 +124,7 @@ def random_missing_vals(X, mu=0, sig=1):
     X: Numpy array
     """
     bNaN   = np.isnan(X)
-    nRands = np.sum(bNaN[:])
+    nRands = np.sum(bNaN.flatten(order='F'))
 
     if nRands != 0:
         X[bNaN] = sig * np.random.randn(nRands) + mu
@@ -180,8 +180,8 @@ def regCCA_alt(X, Y, gammaX, gammaY, corrTol):
     Cyy = C[D:, D:] + (gammaY * np.eye(K))
     Cxy = C[0:D, D:]
 
-    Cxx = 0.5 * (Cxx + Cxx.T);
-    Cyy = 0.5 * (Cyy + Cyy.T);
+    Cxx = 0.5 * (Cxx + Cxx.T)
+    Cyy = 0.5 * (Cyy + Cyy.T)
 
     CholCxx = np.linalg.cholesky(Cxx).T
     if CholCxx.shape[0] == CholCxx.shape[1]:
@@ -198,20 +198,26 @@ def regCCA_alt(X, Y, gammaX, gammaY, corrTol):
     T = invCholCxx.T @ Cxy @ invCholCyy
 
     if D >= K:
-        [L,S,D] = np.linalg.svd(T, 0)
+        [L,S,D] = np.linalg.svd(T, full_matrices=False)
+        S = np.diag(S)
+        D = D.T
+
         r = np.diag(S)
         A = invCholCxx @ L
         B = invCholCyy @ D
     else:
-        [L,S,D] = np.linalg.svd(T.T, 0);
+        [L,S,D] = np.linalg.svd(T.T, full_matrices=False)
+        S = np.diag(S)
+        D = D.T
+
         r = np.diag(S)
         A = invCholCxx @ D
         B = invCholCyy @ L
 
     bGreaterThanTol = np.absolute(r) > np.absolute(corrTol * np.max(np.absolute(r)))
 
-    A = A[:, bGreaterThanTol[0]]
-    B = B[:, bGreaterThanTol[0]]
+    A = A[:, bGreaterThanTol]
+    B = B[:, bGreaterThanTol]
     r = r[bGreaterThanTol]
 
     return A, B, r

@@ -6,6 +6,7 @@ from src.utils.commonUtils import amerge
 from src.utils.commonUtils import dict2array
 from src.utils.commonUtils import queryIfColumnsVary
 
+
 def isSquare(x):
     # Check if a numpy array is Square matrix, i.e. NxN
     if len(x.shape) <= 1:
@@ -177,7 +178,7 @@ def componentAnalysis(X, Y, processes, epsilon):
         if processes['CCAclasswise']:
             # Consider each output in an in / out fashion to generate a set of K projections.
             for k in range(K):
-                L, _, _ = la.svd(q1.T @ Y[:, k])
+                L, _, _ = la.svd(np.dot(q1.T, Y[:, k]), full_matrices=False)
                 if isSquare(r1):
                     locProj = np.linalg.solve(r1, L[:, 0] * np.sqrt(x1-1))
                 else:

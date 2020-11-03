@@ -17,6 +17,7 @@ warnings.filterwarnings('ignore')
 import logging
 logger = logging.getLogger(__name__)
 
+#-----------------------------------------------------------------------------#
 def setupLeaf(YTrain, bReg, options):
     """
     Update tree struct to make node a leaf
@@ -38,14 +39,17 @@ def setupLeaf(YTrain, bReg, options):
 
     return tree
 
+
+#-----------------------------------------------------------------------------#
 def makeExpansionFunc(wZ, bZ, bIncOrig):
     if bIncOrig:
-        f = lambda x: np.concatenate((x, random_feature_expansion(x, wZ, bZ)))
+        f = lambda x: np.concatenate((x, random_feature_expansion(x, wZ, bZ)), axis=1)
     else:
         f = lambda x: random_feature_expansion(x, wZ, bZ)
 
     return f
 
+#-----------------------------------------------------------------------------#
 def calc_mse(cumtotal, cumsq, YTrainSort):
     value = np.divide(cumsq, sVT(np.arange(1, YTrainSort.shape[0]+1))) -\
             np.divide(((cumtotal[0:-1, :])**2  + YTrainSort**2 + np.multiply(2 * cumtotal[0:-1, :], YTrainSort)),\
@@ -54,7 +58,7 @@ def calc_mse(cumtotal, cumsq, YTrainSort):
     return value
 
 
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------#
 def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     """
     This function applies greedy splitting according to the CCT algorithm and the
@@ -154,7 +158,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
                 break
             indFeatIn = np.random.choice(iCanBeSelected.size, size=int(lambda_), replace=False)
             iFeatIn   = iCanBeSelected[indFeatIn]
-            bInMat    = np.equal(sVT(iFeatureNum.flatten(order='F')), iFeatIn.flatten(order='F'))
+            bInMat    = np.equal((iFeatureNum.flatten(order='F')[np.newaxis]), (iFeatIn.flatten(order='F')[np.newaxis].T))
             iInNew    = (np.any(bInMat, axis=0)).ravel().nonzero()[0]
             bXVaries  = queryIfColumnsVary(X=XTrain[:, iInNew], tol=options["XVariationTol"])
             iIn       = np.sort(np.concatenate((iIn, iInNew[bXVaries])))
@@ -168,9 +172,11 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     # Projection bootstrap if required
     #---------------------------------------------------------------------------
     if options["bProjBoot"]:
-        iTrainThis = np.random.randint(N, size=(N,1))
+        iTrainThis = np.random.randint(N, size=(N, 1))
         XTrainBag  = XTrain[iTrainThis, iIn]
         YTrainBag  = YTrain[iTrainThis, :]
+        if len(YTrainBag.shape) > 2:
+            YTrainBag  = np.squeeze(YTrainBag)
     else:
         XTrainBag = XTrain[:, iIn]
         YTrainBag = YTrain
@@ -193,6 +199,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     #---------------------------------------------------------------------------
     if (not (len(options["projections"]) == 0)) and ((XTrainBag.shape[0] == 2) or queryIfOnlyTwoUniqueRows(X=XTrainBag)):
         bSplit, projMat, partitionPoint = twoPointMaxMarginSplit(XTrainBag, YTrainBag, options["XVariationTol"])
+
         if (not bSplit):
             tree = setupLeaf(YTrain, bReg, options)
             return tree
@@ -202,8 +209,9 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     else:
         # Generate the new features as required
         if options["bRCCA"]:
-            wZ, bZ  = genFeatureExpansionParameters(XTrainBag, options["rccaNFeatures"], options["rccaLengthScale"])
-            fExp    = makeExpansionFunc(wZ, bZ, options["rccaIncludeOriginal"])
+            wZ, bZ    = genFeatureExpansionParameters(XTrainBag, options["rccaNFeatures"], options["rccaLengthScale"])
+            fExp      = makeExpansionFunc(wZ, bZ, options["rccaIncludeOriginal"])
+            XTrainBag = fExp(XTrainBag)
             projMat, _, _ = regCCA_alt(XTrainBag, YTrainBag, options["rccaRegLambda"], options["rccaRegLambda"], 1e-8)
             if projMat.size == 0:
                 projMat = np.ones((XTrainBag.shape[1], 1))
@@ -212,7 +220,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         else:
             projMat, yprojMat, _, _, _ = componentAnalysis(XTrainBag, YTrainBag, options["projections"], options["epsilonCCA"])
             UTrain = np.dot(XTrain[:, iIn], projMat)
-        
+
         #-----------------------------------------------------------------------
         # Choose the features to use
         #-----------------------------------------------------------------------

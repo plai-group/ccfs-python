@@ -54,7 +54,7 @@ def classExpansion(Y, N, optionsFor):
         assert (not optionsFor["bSepPred"]), 'Seperate in-out prediction is only valid when Y is a logical array'
         classes, _, Yindexes = mat_unique(Y)
         Y  = np.empty((Yindexes.shape[0], classes.size))
-        Y.fill(False)
+        Y.fill(0)
         for k in range(classes.size):
             Y[:, k] = (k == Yindexes)
 

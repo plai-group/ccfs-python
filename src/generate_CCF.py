@@ -16,7 +16,7 @@ from src.prediction_utils.replicate_input_process import replicateInputProcess
 import logging
 logger  = logging.getLogger(__name__)
 
-
+#-------------------------------------------------------------------------------#
 def updateForD(optionsFor, D):
     """
     Updates the options for a particular D to set lambda and decide whether to
@@ -49,6 +49,7 @@ def updateForD(optionsFor, D):
     return optionsFor
 
 
+#-------------------------------------------------------------------------------#
 def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
     """
     A sub-function is used so that it can be shared between the for and
@@ -92,7 +93,7 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
 
     # Train the tree
     tree = growCCT(XTrain, YTrain, bReg, optionsFor, iFeatureNum, 0)
-
+    
     # Calculate out of bag error if relevant
     if optionsFor["bBagTrees"]:
         tree["iOutOfBag"] = iOob
@@ -105,6 +106,7 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
     return tree
 
 
+#-------------------------------------------------------------------------------#
 def genTree_parallel(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain, pos):
     """
     A sub-function is used so that it can be shared between the for and
@@ -161,7 +163,7 @@ def genTree_parallel(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain, pos)
     return (pos, tree)
 
 
-
+#-------------------------------------------------------------------------------#
 def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=False, XTest=None, bKeepTrees=True, iFeatureNum=None, bOrdinal=None):
     """
     Creates a canonical correlation forest (CCF) comprising of nTrees
@@ -284,8 +286,6 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
     print(iFeatureNum)
     D = (fastUnique(iFeatureNum)).size
 
-    print(D)
-
     if (not bReg):
         # Process provided classes
         YTrain, classes, optionsFor = classExpansion(Y=YTrain, N=N, optionsFor=optionsFor)
@@ -295,6 +295,9 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
 
         optionsFor = updateForD(optionsFor, D)
 
+        # Remove any single dims
+        #YTrain = np.squeeze(YTrain)
+        
         # Stored class names can be used to link the ids given in the CCT to the
         # actual class names
         optionsFor["classNames"] = classes
@@ -316,7 +319,6 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
         optionsFor["org_stdY"] = stdY
         optionsFor["mseTotal"] = 1
     
-
     # Fill in any unset projection fields and set to false
     projection_fields = ['CCA', 'PCA', 'CCAclasswise', 'Original', 'Random']
     all_fields = optionsFor["projections"].keys()
