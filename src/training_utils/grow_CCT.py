@@ -432,7 +432,12 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
         if (not options["org_muY"].size == 0):
             tree["mean"] = tree["mean"] + options["org_muY"]
 
-    bLessThanTrain = np.squeeze(bLessThanTrain)
+    if len(bLessThanTrain.shape) > 1:
+        if bLessThanTrain.shape[1] == 1:
+            bLessThanTrain = np.squeeze(bLessThanTrain, axis=1)
+        else:
+            bLessThanTrain = np.squeeze(bLessThanTrain, axis=0)
+
     treeLeft  = growCCT(XTrain[bLessThanTrain, :], YTrain[bLessThanTrain,  :], bReg, options, iFeatureNum, depth+1)
     treeRight = growCCT(XTrain[~bLessThanTrain,:], YTrain[~bLessThanTrain, :], bReg, options, iFeatureNum, depth+1)
     tree["iIn"] = iIn
@@ -447,7 +452,7 @@ def growCCT(XTrain, YTrain, bReg, options, iFeatureNum, depth):
     if len(projMat.shape) < 2:
         projMat = np.expand_dims(projMat, axis=1)
 
-    tree["decisionProjection"] = projMat[:, iDir]
+    tree["decisionProjection"] = projMat[:, iDir, np.newaxis]
     tree["paritionPoint"]      = partitionPoint
     tree["lessthanChild"]      = treeLeft
     tree["greaterthanChild"]   = treeRight

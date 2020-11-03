@@ -1,13 +1,10 @@
-import sys
-sys.path.append("/ccfs-python/src/")
-
 import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
-from predict_from_CCF import predictFromCCF
-from utils.commonUtils import islogical
-from utils.ccfUtils import mat_unique
+from src.predict_from_CCF import predictFromCCF
+from src.utils.commonUtils import islogical
+from src.utils.ccfUtils import mat_unique
 
 def plotCCFClfyDecisionSurface(name, CCF, x1Lims, x2Lims, XTrain, X, Y, nx1Res=250, nx2Res=250, n_contours_or_vals=[], plot_X=True):
     xi = np.linspace(x1Lims[0], x1Lims[1], nx1Res)

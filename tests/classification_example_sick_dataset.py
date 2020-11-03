@@ -6,6 +6,8 @@ from src.generate_CCF import genCCF
 from sklearn.impute import SimpleImputer
 from src.predict_from_CCF import predictFromCCF
 from src.plotting.plot_surface import plotCCFClfyDecisionSurface
+# SKlearn
+from sklearn.metrics import f1_score
 
 # Sample Script for testing sick dataset
 
@@ -54,7 +56,7 @@ optionsClassCCF['task_ids']   = np.array([])
 #-------------------------------------------------------------------------------
 ## TRAIN
 # Load data
-XTrain = pd.read_csv('/ccfs-python/dataset/sick.csv')
+XTrain = pd.read_csv('../dataset/sick.csv')
 YTrain = pd.DataFrame(XTrain.pop('Class'))
 
 # Basic missing values imputation
@@ -76,7 +78,7 @@ CCF = genCCF(XTrain, YTrain, nTrees=100, optionsFor=optionsClassCCF, do_parallel
 
 ## TEST
 # Load data
-XTest = pd.read_csv('/ccfs-python/dataset/sick_test.csv')
+XTest = pd.read_csv('../dataset/sick_test.csv')
 YTest = pd.DataFrame(XTest.pop('Class'))
 
 # Basic missing values imputation
@@ -93,6 +95,11 @@ if isinstance(YTest, pd.DataFrame):
 YpredCCF, _, _ = predictFromCCF(CCF, XTest)
 
 # Evaluate
-YTest = YTest.to_numpy()
-print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest==YpredCCF, axis=0))),  '%')
+## Accuracy
+print('CCF Test missclassification rate (lower better): ', (100*(1- np.mean(YTest.to_numpy()==YpredCCF, axis=0))),  '%')
+
+## F1-Score
+score = f1_score(YTest, YpredCCF, pos_label='sick')
+print('F1 Score: ', (score))
 #-------------------------------------------------------------------------------
+

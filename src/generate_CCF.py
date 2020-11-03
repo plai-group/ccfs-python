@@ -64,7 +64,6 @@ def genTree(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain):
 
     # Bag if required
     if optionsFor["bBagTrees"] or (Ntrain != N):
-        #print()
         all_samples = np.arange(N)
         iTrainThis  = np.random.choice(all_samples, Ntrain, replace=optionsFor["bBagTrees"])
         iOob        = np.setdiff1d(all_samples, iTrainThis).T
@@ -121,7 +120,6 @@ def genTree_parallel(XTrain, YTrain, bReg, optionsFor, iFeatureNum, Ntrain, pos)
 
     # Bag if required
     if optionsFor["bBagTrees"] or (Ntrain != N):
-        #print()
         all_samples = np.arange(N)
         iTrainThis  = np.random.choice(all_samples, Ntrain, replace=optionsFor["bBagTrees"])
         iOob        = np.setdiff1d(all_samples, iTrainThis).T
@@ -283,7 +281,6 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
     N = XTrain.shape[0]
     # Note that setting of number of features to subsample is based only
     # number of features before expansion of categoricals.
-    print(iFeatureNum)
     D = (fastUnique(iFeatureNum)).size
 
     if (not bReg):
@@ -367,6 +364,8 @@ def genCCF(XTrain, YTrain, nTrees=500, bReg=False, optionsFor={}, do_parallel=Fa
 
             if nT%25 == 0:
                 print('Progress: {}/{}'.format(nT, nTrees))
+            
+            del tree
 
     print('Completed')
     print('..................................................................')
