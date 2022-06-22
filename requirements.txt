@@ -1,4 +1,4 @@
-Numpy==1.18.2
+Numpy==1.22.0
 Pandas==1.0.3
 SciPy==1.4.1
 scikit-learn==0.22.2.post1
